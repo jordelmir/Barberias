@@ -11,13 +11,14 @@ interface TimelineProps {
   currentDate: Date;
   openHour: number;
   closeHour: number;
+  timeSliceMinutes: number; // New Prop for dynamic grid
   onStatusChange: (appointmentId: string, status: AppointmentStatus) => void;
   onDateChange: (date: Date) => void;
   onEditAppointment: (appointment: Appointment) => void; 
 }
 
 export const Timeline: React.FC<TimelineProps> = ({ 
-  barbers, appointments, services, currentDate, openHour, closeHour, onStatusChange, onDateChange, onEditAppointment 
+  barbers, appointments, services, currentDate, openHour, closeHour, timeSliceMinutes, onStatusChange, onDateChange, onEditAppointment 
 }) => {
   const [now, setNow] = useState(new Date());
 
@@ -68,6 +69,10 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   // Time markers
   const hours = Array.from({ length: closeHour - openHour }, (_, i) => i + openHour);
+  
+  // Calculate Grid Lines based on Time Slice
+  const gridLinesPerHour = 60 / timeSliceMinutes;
+  const totalGridLines = (closeHour - openHour) * gridLinesPerHour;
 
   return (
     <div className="flex flex-col bg-dark-900/50 rounded-xl relative">
@@ -178,12 +183,12 @@ export const Timeline: React.FC<TimelineProps> = ({
                         return (
                         <div key={barber.id} className="w-[200px] flex-shrink-0 relative border-r border-white/5 group/col">
                             
-                            {/* Grid Lines */}
-                            {Array.from({length: (closeHour - openHour) * 4}).map((_, i) => (
+                            {/* Grid Lines - DYNAMIC based on timeSliceMinutes */}
+                            {Array.from({length: totalGridLines}).map((_, i) => (
                                 <div 
                                     key={i} 
-                                    className={`absolute w-full border-t ${i % 4 === 0 ? 'border-white/10' : 'border-white/5'}`}
-                                    style={{ top: i * 15 * pixelsPerMinute }}
+                                    className={`absolute w-full border-t ${i % gridLinesPerHour === 0 ? 'border-white/10' : 'border-white/5'}`}
+                                    style={{ top: i * timeSliceMinutes * pixelsPerMinute }}
                                 ></div>
                             ))}
                             

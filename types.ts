@@ -25,19 +25,17 @@ export interface BookingHistoryItem {
 }
 
 export interface CutPreferences {
-  sides: string;    // e.g., "Desvanecido Bajo", "Tijera"
-  top: string;      // e.g., "Despuntar", "Largo", "Texturizado"
-  beard: string;    // e.g., "Perfilado", "Afeitado total"
-  finish: string;   // e.g., "Natural", "Cera Mate", "Gel"
-  remarks: string;  // Free text
+  remarks: string;  // Free text always exists
+  [categoryId: string]: string; // Dynamic keys for any category (sides, top, color, eyebrows...)
 }
 
-export interface GlobalStyleOptions {
-  sides: string[];
-  top: string[];
-  beard: string[];
-  finish: string[];
+export interface StyleCategory {
+  id: string;
+  label: string;
+  items: string[];
 }
+
+export type GlobalStyleOptions = StyleCategory[];
 
 export interface Client {
   id: string;

@@ -37,6 +37,8 @@ export default function App() {
   const [shopRules, setShopRules] = useState<string>("1. Venir con el cabello lavado y sin gel.\n2. Llegar 5 minutos antes de la cita.\n3. Avisar cancelaciones con antelación.");
   const [openHour, setOpenHour] = useState<number>(DEFAULT_OPEN_HOUR);
   const [closeHour, setCloseHour] = useState<number>(DEFAULT_CLOSE_HOUR);
+  // NEW: Dynamic Time Slice State
+  const [timeSliceMinutes, setTimeSliceMinutes] = useState<number>(30); // Default to 30 mins as requested
 
   // UI State
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -324,10 +326,13 @@ export default function App() {
   };
 
   const handleDeleteBarber = (barberId: string) => setBarbers(prev => prev.filter(b => b.id !== barberId));
-  const handleUpdateSettings = (settings: { rules: string; openHour: number; closeHour: number }) => {
+  
+  // Updated Settings Handler to include Time Slice
+  const handleUpdateSettings = (settings: { rules: string; openHour: number; closeHour: number; timeSlice: number }) => {
       setShopRules(settings.rules);
       setOpenHour(settings.openHour);
       setCloseHour(settings.closeHour);
+      setTimeSliceMinutes(settings.timeSlice);
   };
   const handleUpdateStyles = (newStyles: GlobalStyleOptions) => {
       setStyleOptions(newStyles);
@@ -421,6 +426,17 @@ export default function App() {
                     </div>
                 </div>
 
+                {/* Show Config Button for Barbers as well */}
+                {(role === Role.BARBER || role === Role.ADMIN) && (
+                    <button
+                        onClick={() => setIsShopRulesOpen(true)}
+                        className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors mr-1"
+                        title="Configuración de Agenda"
+                    >
+                        <Settings size={18} />
+                    </button>
+                )}
+
                 <button 
                     onClick={() => setIsProfileOpen(true)}
                     className="group relative flex items-center gap-2 rounded-full hover:bg-white/10 transition-all p-0.5 pr-1 focus:outline-none focus:ring-2 focus:ring-brand-500/50"
@@ -480,6 +496,7 @@ export default function App() {
                             <AlertCircle size={18} />
                             Reporte Cancelaciones
                         </button>
+                        {/* Settings moved to nav bar for barbers, but kept here for explicit Admin Access */}
                         <button 
                             onClick={() => setIsShopRulesOpen(true)}
                             className="flex items-center gap-2 glass-morphism-inner text-gray-300 px-4 py-2 rounded-lg font-bold hover:bg-white/10 hover:text-white border border-white/5 backdrop-blur transition-all"
@@ -558,6 +575,7 @@ export default function App() {
                         currentDate={currentDate}
                         openHour={openHour}
                         closeHour={closeHour}
+                        timeSliceMinutes={timeSliceMinutes} // Passed down for dynamic grid
                         onStatusChange={handleStatusChange}
                         onDateChange={setCurrentDate}
                         onEditAppointment={setEditingAppointment}
@@ -586,6 +604,7 @@ export default function App() {
                             shopRules={shopRules}
                             openHour={openHour}
                             closeHour={closeHour}
+                            timeSliceMinutes={timeSliceMinutes} // Passed down
                             currentUser={loggedInUser}
                             currentRole={role}
                             onBook={handleBook}
@@ -613,6 +632,7 @@ export default function App() {
                     shopRules={shopRules}
                     openHour={openHour}
                     closeHour={closeHour}
+                    timeSliceMinutes={timeSliceMinutes} // Passed down
                     currentUser={loggedInUser}
                     currentRole={Role.ADMIN}
                     onBook={handleBook}
@@ -625,64 +645,68 @@ export default function App() {
         </div>
       )}
 
-      {/* Modals - Only render if user has permission (ADMIN) */}
-      {role === Role.ADMIN && (
-          <>
-            {isServiceManagerOpen && (
-                <ServiceManager 
-                    services={services}
-                    onAdd={handleAddService}
-                    onUpdate={handleUpdateService}
-                    onDelete={handleDeleteService}
-                    onClose={() => setIsServiceManagerOpen(false)}
-                />
-            )}
-            
-            {isBarberManagerOpen && (
-                <BarberManager 
-                    barbers={barbers}
-                    onAdd={handleAddBarber}
-                    onUpdate={handleUpdateBarber}
-                    onDelete={handleDeleteBarber}
-                    onClose={() => setIsBarberManagerOpen(false)}
-                />
-            )}
+      {/* Modals - Only render if user has permission (ADMIN or BARBER for specific ones) */}
+      
+      {/* Services Manager - Admin Only */}
+      {role === Role.ADMIN && isServiceManagerOpen && (
+        <ServiceManager 
+            services={services}
+            onAdd={handleAddService}
+            onUpdate={handleUpdateService}
+            onDelete={handleDeleteService}
+            onClose={() => setIsServiceManagerOpen(false)}
+        />
+      )}
+      
+      {/* Barber Manager - Admin Only */}
+      {role === Role.ADMIN && isBarberManagerOpen && (
+        <BarberManager 
+            barbers={barbers}
+            onAdd={handleAddBarber}
+            onUpdate={handleUpdateBarber}
+            onDelete={handleDeleteBarber}
+            onClose={() => setIsBarberManagerOpen(false)}
+        />
+      )}
 
-            {isClientManagerOpen && (
-                <ClientManager 
-                    clients={clients}
-                    onAdd={handleCreateClient}
-                    onUpdate={handleUpdateClient}
-                    onDelete={handleDeleteClient}
-                    onClose={() => setIsClientManagerOpen(false)}
-                />
-            )}
-            
-            {isShopRulesOpen && (
-                <ShopRulesEditor
-                    currentRules={shopRules}
-                    currentOpenHour={openHour}
-                    currentCloseHour={closeHour}
-                    onSave={handleUpdateSettings}
-                    onClose={() => setIsShopRulesOpen(false)}
-                />
-            )}
+      {/* Client Manager - Admin Only */}
+      {role === Role.ADMIN && isClientManagerOpen && (
+        <ClientManager 
+            clients={clients}
+            onAdd={handleCreateClient}
+            onUpdate={handleUpdateClient}
+            onDelete={handleDeleteClient}
+            onClose={() => setIsClientManagerOpen(false)}
+        />
+      )}
+      
+      {/* Shop Rules / Time Slice Settings - Available to Admin AND Barber (as requested) */}
+      {(role === Role.ADMIN || role === Role.BARBER) && isShopRulesOpen && (
+        <ShopRulesEditor
+            currentRules={shopRules}
+            currentOpenHour={openHour}
+            currentCloseHour={closeHour}
+            currentTimeSlice={timeSliceMinutes}
+            onSave={handleUpdateSettings}
+            onClose={() => setIsShopRulesOpen(false)}
+        />
+      )}
 
-            {isStyleEditorOpen && (
-                <StyleOptionsEditor
-                    currentOptions={styleOptions}
-                    onSave={handleUpdateStyles}
-                    onClose={() => setIsStyleEditorOpen(false)}
-                />
-            )}
-            
-            {isCancellationReportOpen && (
-                <CancellationAnalysis 
-                    appointments={appointments}
-                    onClose={() => setIsCancellationReportOpen(false)}
-                />
-            )}
-          </>
+      {/* Style Editor - Admin Only */}
+      {role === Role.ADMIN && isStyleEditorOpen && (
+        <StyleOptionsEditor
+            currentOptions={styleOptions}
+            onSave={handleUpdateStyles}
+            onClose={() => setIsStyleEditorOpen(false)}
+        />
+      )}
+      
+      {/* Cancellation Report - Admin Only */}
+      {role === Role.ADMIN && isCancellationReportOpen && (
+        <CancellationAnalysis 
+            appointments={appointments}
+            onClose={() => setIsCancellationReportOpen(false)}
+        />
       )}
 
       {/* Appointment Editor (Available to Admin and Barber) */}

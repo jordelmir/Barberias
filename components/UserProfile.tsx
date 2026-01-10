@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Client, CutPreferences, GlobalStyleOptions, Role, Appointment } from '../types';
-import { X, Star, Calendar, Scissors, Award, History, Edit3, Save, MessageSquare, Info, Plus, Check, Hash, Smile, Zap, AlertCircle, Layout, Sparkles, ChevronRight, User, Trash2, Clock, AlertTriangle, PhoneCall, Fingerprint } from 'lucide-react';
+import { X, Star, Calendar, Scissors, Award, History, Edit3, Save, MessageSquare, Info, Plus, Check, Hash, Smile, Zap, AlertCircle, Layout, Sparkles, ChevronRight, User, Trash2, Clock, AlertTriangle, PhoneCall, Fingerprint, Tag } from 'lucide-react';
 import { AvatarSelector } from './AvatarSelector';
 import { formatTime, canClientCancel } from '../services/timeEngine';
 
@@ -51,7 +51,7 @@ const StyleSelector: React.FC<StyleSelectorProps> = ({ title, icon: Icon, value,
                 <div className="p-1.5 rounded-lg bg-dark-700 text-brand-500 group-hover:bg-brand-500 group-hover:text-black transition-colors">
                     <Icon size={14} />
                 </div>
-                <label className="text-xs text-gray-300 font-bold uppercase tracking-wide">
+                <label className="text-xs text-gray-300 font-bold uppercase tracking-wide truncate">
                     {title}
                 </label>
             </div>
@@ -143,7 +143,7 @@ const PressHoldButton: React.FC<PressHoldButtonProps> = ({ onConfirm, label }) =
 
     return (
         <button
-            className="relative w-full overflow-hidden rounded-xl bg-red-900/20 border border-red-500/50 h-14 group select-none touch-none"
+            className="relative w-full overflow-hidden rounded-xl bg-red-900/20 border border-red-500/50 h-16 md:h-14 group select-none touch-none active:scale-95 transition-transform"
             onMouseDown={startPress}
             onMouseUp={endPress}
             onMouseLeave={endPress}
@@ -158,9 +158,9 @@ const PressHoldButton: React.FC<PressHoldButtonProps> = ({ onConfirm, label }) =
             ></div>
             
             {/* Content Layer */}
-            <div className="absolute inset-0 flex items-center justify-center gap-2 z-10">
-                <Fingerprint size={20} className={`transition-colors ${progress > 50 ? 'text-white' : 'text-red-500'}`} />
-                <span className={`text-xs font-bold uppercase tracking-widest transition-colors ${progress > 50 ? 'text-white' : 'text-red-400'}`}>
+            <div className="absolute inset-0 flex items-center justify-center gap-2 z-10 pointer-events-none">
+                <Fingerprint size={24} className={`transition-colors ${progress > 50 ? 'text-white' : 'text-red-500'}`} />
+                <span className={`text-xs md:text-sm font-bold uppercase tracking-widest transition-colors ${progress > 50 ? 'text-white' : 'text-red-400'}`}>
                     {progress === 100 ? '¡CONFIRMADO!' : isPressed ? 'MANTÉN PRESIONADO...' : label}
                 </span>
             </div>
@@ -193,30 +193,32 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
   ];
 
   // Preferences Form State
-  const [prefs, setPrefs] = useState<CutPreferences>(client.preferences || {
-    sides: '', top: '', beard: '', finish: '', remarks: ''
-  });
+  // Initialize with client preferences or empty remarks
+  const [prefs, setPrefs] = useState<CutPreferences>(client.preferences || { remarks: '' });
 
-  const [optionLists, setOptionLists] = useState({
-      sides: Array.from(new Set([...globalOptions.sides, prefs.sides].filter(Boolean))),
-      top: Array.from(new Set([...globalOptions.top, prefs.top].filter(Boolean))),
-      beard: Array.from(new Set([...globalOptions.beard, prefs.beard].filter(Boolean))),
-      finish: Array.from(new Set([...globalOptions.finish, prefs.finish].filter(Boolean)))
-  });
-
-  useEffect(() => {
-     setOptionLists({
-        sides: Array.from(new Set([...globalOptions.sides, prefs.sides].filter(Boolean))),
-        top: Array.from(new Set([...globalOptions.top, prefs.top].filter(Boolean))),
-        beard: Array.from(new Set([...globalOptions.beard, prefs.beard].filter(Boolean))),
-        finish: Array.from(new Set([...globalOptions.finish, prefs.finish].filter(Boolean)))
-     });
+  // Handle local dynamic options (custom additions that aren't in global yet but user wants to save)
+  // We reconstruct the full option list by merging Global Options + User Selected Option (if it's not in global)
+  const optionLists = useMemo(() => {
+      const lists: Record<string, string[]> = {};
+      
+      globalOptions.forEach(cat => {
+          const userVal = prefs[cat.id];
+          const globalItems = cat.items;
+          // Ensure user's value is in the list even if custom
+          const merged = userVal && !globalItems.includes(userVal) 
+              ? [...globalItems, userVal] 
+              : globalItems;
+          lists[cat.id] = Array.from(new Set(merged));
+      });
+      
+      return lists;
   }, [globalOptions, prefs]);
 
-  const handleAddOption = (category: keyof typeof optionLists, value: string) => {
-      setOptionLists(prev => ({
+  // Helper for dynamic local additions (visual only until saved)
+  const handleAddOption = (categoryId: string, value: string) => {
+      setPrefs(prev => ({
           ...prev,
-          [category]: [...prev[category], value]
+          [categoryId]: value
       }));
   };
 
@@ -228,6 +230,17 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
   const handleSaveAvatar = () => {
       onUpdateProfile({ avatar: tempAvatar });
       setIsEditingAvatar(false);
+  };
+
+  // Helper to map icon ID
+  const getCategoryIcon = (id: string) => {
+      switch(id) {
+          case 'sides': return Hash;
+          case 'top': return Scissors;
+          case 'beard': return Smile;
+          case 'finish': return Zap;
+          default: return Tag;
+      }
   };
 
   // --- CANCELLATION LOGIC ---
@@ -423,26 +436,31 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                                     const canCancel = canClientCancel(apt.startTime);
                                     const isBeingCancelled = selectedAppointmentId === apt.id && cancelStep !== 'IDLE';
 
+                                    // Dynamic Height Class: Expands when cancelling to fit the wizard comfortably on mobile
+                                    const containerHeightClass = isBeingCancelled 
+                                        ? 'min-h-[450px] md:min-h-[400px] border-red-500/30' 
+                                        : '';
+
                                     return (
-                                        <div key={apt.id} className="bg-dark-800/80 border border-emerald-500/30 rounded-xl p-5 relative overflow-hidden group">
+                                        <div key={apt.id} className={`bg-dark-800/80 border border-emerald-500/30 rounded-xl p-5 relative overflow-hidden group transition-all duration-300 ${containerHeightClass}`}>
                                             
                                             {/* CANCELLATION OVERLAY - WIZARD */}
                                             {isBeingCancelled && (
-                                                <div className="absolute inset-0 z-20 bg-dark-900/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
+                                                <div className="absolute inset-0 z-20 bg-dark-900/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 md:p-6 text-center animate-in fade-in duration-300 overflow-y-auto custom-scrollbar">
                                                     
                                                     {/* STEP 1: REASON */}
                                                     {cancelStep === 'REASON' && (
-                                                        <div className="w-full max-w-sm animate-in slide-in-from-bottom-4">
-                                                            <div className="flex justify-between items-center mb-4">
+                                                        <div className="w-full max-w-sm animate-in slide-in-from-bottom-4 my-auto">
+                                                            <div className="flex justify-between items-center mb-4 sticky top-0 bg-dark-900/0 backdrop-blur-sm py-2 z-10">
                                                                 <h4 className="text-white font-bold text-sm">¿Por qué deseas cancelar?</h4>
-                                                                <button onClick={() => { setCancelStep('IDLE'); setSelectedAppointmentId(null); }}><X size={18} className="text-gray-500 hover:text-white"/></button>
+                                                                <button onClick={() => { setCancelStep('IDLE'); setSelectedAppointmentId(null); }} className="p-1"><X size={20} className="text-gray-500 hover:text-white"/></button>
                                                             </div>
-                                                            <div className="space-y-2">
+                                                            <div className="space-y-2.5 pb-4">
                                                                 {cancellationReasons.map(r => (
                                                                     <button 
                                                                         key={r}
                                                                         onClick={() => handleReasonSelection(r)}
-                                                                        className="w-full text-left p-3 rounded-lg border border-dark-600 hover:border-brand-500 hover:bg-dark-800 text-xs text-gray-300 hover:text-white transition-all flex justify-between group/btn"
+                                                                        className="w-full text-left p-3.5 rounded-lg border border-dark-600 hover:border-brand-500 hover:bg-dark-800 text-xs text-gray-300 hover:text-white transition-all flex justify-between group/btn active:scale-[0.98]"
                                                                     >
                                                                         {r} <ChevronRight size={14} className="opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                                                                     </button>
@@ -450,7 +468,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                                                             </div>
                                                             {cancelReason === 'Otro Motivo' && (
                                                                 <textarea 
-                                                                    className="w-full mt-2 bg-dark-800 border border-dark-600 rounded-lg p-3 text-xs text-white outline-none focus:border-brand-500"
+                                                                    className="w-full mt-2 bg-dark-800 border border-dark-600 rounded-lg p-3 text-xs text-white outline-none focus:border-brand-500 min-h-[80px]"
                                                                     placeholder="Describe el motivo..."
                                                                     value={otherReason}
                                                                     onChange={e => setOtherReason(e.target.value)}
@@ -461,24 +479,24 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
 
                                                     {/* STEP 2: CALL CHECK */}
                                                     {cancelStep === 'CALL_CHECK' && (
-                                                        <div className="w-full max-w-sm animate-in slide-in-from-right-4">
+                                                        <div className="w-full max-w-sm animate-in slide-in-from-right-4 my-auto">
                                                             <div className="w-12 h-12 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-orange-500">
                                                                 <PhoneCall size={24} />
                                                             </div>
                                                             <h4 className="text-white font-bold text-lg mb-2">Protocolo de Cancelación</h4>
-                                                            <p className="text-xs text-gray-400 mb-6 leading-relaxed">
+                                                            <p className="text-xs text-gray-400 mb-6 leading-relaxed px-2">
                                                                 Para evitar penalizaciones en tu perfil, es obligatorio notificar verbalmente al barbero sobre esta cancelación de último momento.
                                                             </p>
                                                             <div className="space-y-3">
                                                                 <button 
                                                                     onClick={() => setCancelStep('CONFIRM')}
-                                                                    className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wide transition-all"
+                                                                    className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wide transition-all shadow-lg active:scale-95"
                                                                 >
                                                                     Ya llamé al Barbero
                                                                 </button>
                                                                 <button 
                                                                     onClick={() => { setCancelStep('IDLE'); setSelectedAppointmentId(null); }}
-                                                                    className="w-full text-gray-500 hover:text-white py-2 text-xs"
+                                                                    className="w-full text-gray-500 hover:text-white py-3 text-xs"
                                                                 >
                                                                     Cancelar proceso
                                                                 </button>
@@ -488,19 +506,24 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
 
                                                     {/* STEP 3: PRESS TO HOLD CONFIRM */}
                                                     {cancelStep === 'CONFIRM' && (
-                                                        <div className="w-full max-w-xs animate-in zoom-in-95">
-                                                            <h4 className="text-red-500 font-bold text-sm mb-4 uppercase tracking-wider">Confirmación Final</h4>
+                                                        <div className="w-full max-w-xs animate-in zoom-in-95 my-auto">
+                                                            <div className="mb-6 flex flex-col items-center">
+                                                                <AlertCircle size={32} className="text-red-500 mb-2" />
+                                                                <h4 className="text-red-500 font-bold text-sm uppercase tracking-wider text-center">Confirmación Final</h4>
+                                                            </div>
+                                                            
                                                             <PressHoldButton 
                                                                 onConfirm={finalizeCancellation} 
-                                                                label="Confirmar Llamada y Cancelar"
+                                                                label="MANTÉN PARA CANCELAR"
                                                                 isMobile={true}
                                                             />
-                                                            <p className="text-[10px] text-gray-500 mt-4">
+                                                            
+                                                            <p className="text-[10px] text-gray-500 mt-6 text-center">
                                                                 Esta acción no se puede deshacer.
                                                             </p>
                                                             <button 
                                                                 onClick={() => { setCancelStep('IDLE'); setSelectedAppointmentId(null); }}
-                                                                className="mt-4 text-gray-500 hover:text-white text-xs underline"
+                                                                className="mt-4 text-gray-500 hover:text-white text-xs underline w-full py-2"
                                                             >
                                                                 Volver atrás
                                                             </button>
@@ -509,7 +532,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
 
                                                     {/* STEP 4: SUCCESS ANIMATION */}
                                                     {cancelStep === 'SUCCESS' && (
-                                                        <div className="flex flex-col items-center justify-center animate-in zoom-in duration-300">
+                                                        <div className="flex flex-col items-center justify-center animate-in zoom-in duration-300 my-auto">
                                                             <div className="w-20 h-20 rounded-full border-4 border-emerald-500 flex items-center justify-center mb-4 relative">
                                                                 <Check size={40} className="text-emerald-500" strokeWidth={4} />
                                                                 <div className="absolute inset-0 rounded-full border-4 border-emerald-500 animate-ping opacity-75"></div>
@@ -522,9 +545,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                                                 </div>
                                             )}
 
-                                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                                                 <Clock size={80} className="text-emerald-500" />
                                             </div>
+                                            
+                                            {/* Normal Card Content */}
                                             <div className="flex justify-between items-start relative z-10">
                                                 <div>
                                                     <div className="text-xs text-emerald-400 font-bold uppercase mb-1 flex items-center gap-2">
@@ -636,8 +661,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                             </button>
                         </div>
 
-                        {/* BENTO GRID LAYOUT */}
+                        {/* BENTO GRID LAYOUT - DYNAMIC MAPPING */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                            
+                            {/* REMARKS (Always fixed first) */}
                             <div className="col-span-1 md:col-span-2 lg:col-span-2 row-span-2">
                                 <div className="h-full bg-dark-800/40 border border-white/5 rounded-xl p-5 hover:border-brand-500/30 transition-colors group flex flex-col">
                                     <div className="flex items-center gap-2 mb-4">
@@ -654,49 +681,19 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                                 </div>
                             </div>
                             
-                            <div className="lg:col-span-2">
-                                <StyleSelector 
-                                    title="Lados / Degradado"
-                                    icon={Hash}
-                                    value={prefs.sides}
-                                    options={optionLists.sides}
-                                    onSelect={(val) => setPrefs({...prefs, sides: val})}
-                                    onAddCustom={(val) => handleAddOption('sides', val)}
-                                />
-                            </div>
-
-                            <div className="lg:col-span-2">
-                                <StyleSelector 
-                                    title="Parte Superior"
-                                    icon={Scissors}
-                                    value={prefs.top}
-                                    options={optionLists.top}
-                                    onSelect={(val) => setPrefs({...prefs, top: val})}
-                                    onAddCustom={(val) => handleAddOption('top', val)}
-                                />
-                            </div>
-
-                             <div className="lg:col-span-2">
-                                <StyleSelector 
-                                    title="Barba & Rostro"
-                                    icon={Smile}
-                                    value={prefs.beard}
-                                    options={optionLists.beard}
-                                    onSelect={(val) => setPrefs({...prefs, beard: val})}
-                                    onAddCustom={(val) => handleAddOption('beard', val)}
-                                />
-                            </div>
-
-                            <div className="lg:col-span-2">
-                                <StyleSelector 
-                                    title="Acabado Final"
-                                    icon={Zap}
-                                    value={prefs.finish}
-                                    options={optionLists.finish}
-                                    onSelect={(val) => setPrefs({...prefs, finish: val})}
-                                    onAddCustom={(val) => handleAddOption('finish', val)}
-                                />
-                            </div>
+                            {/* DYNAMIC CATEGORIES */}
+                            {globalOptions.map((category) => (
+                                <div key={category.id} className="lg:col-span-2">
+                                    <StyleSelector 
+                                        title={category.label}
+                                        icon={getCategoryIcon(category.id)}
+                                        value={prefs[category.id] || ''}
+                                        options={optionLists[category.id] || []}
+                                        onSelect={(val) => setPrefs({...prefs, [category.id]: val})}
+                                        onAddCustom={(val) => handleAddOption(category.id, val)}
+                                    />
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}

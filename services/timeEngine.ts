@@ -56,7 +56,8 @@ export const generateSmartGrid = (
   barberSpeed: number,
   appointments: Appointment[],
   openHour: number,
-  closeHour: number
+  closeHour: number,
+  timeSliceMinutes: number = 30 // Default fallback
 ): ScoredSlot[] => {
   const slots: ScoredSlot[] = [];
   const startOfDay = new Date(date);
@@ -76,7 +77,7 @@ export const generateSmartGrid = (
   let current = startOfDay;
   const now = new Date();
 
-  // Create grid based on TIME_SLICE_MINUTES
+  // Create grid based on dynamic timeSliceMinutes passed from App state
   while (current < endOfDay) {
     const slotTime = new Date(current);
     const proposedEnd = new Date(slotTime.getTime() + durationMs);
@@ -84,14 +85,14 @@ export const generateSmartGrid = (
     // 1. Check if passed time (LOCKED)
     if (date.getDate() === now.getDate() && slotTime < now) {
         slots.push({ time: slotTime, status: 'LOCKED', score: 'STANDARD', blockReason: 'Pasado' });
-        current = new Date(current.getTime() + TIME_SLICE_MINUTES * 60000);
+        current = new Date(current.getTime() + timeSliceMinutes * 60000);
         continue;
     }
 
     // 2. Check Overlaps (OCCUPIED)
     if (!isSlotAvailable(slotTime, proposedEnd, barberId, appointments)) {
         slots.push({ time: slotTime, status: 'OCCUPIED', score: 'STANDARD', blockReason: 'Ocupado' });
-        current = new Date(current.getTime() + TIME_SLICE_MINUTES * 60000);
+        current = new Date(current.getTime() + timeSliceMinutes * 60000);
         continue;
     }
 
@@ -99,7 +100,7 @@ export const generateSmartGrid = (
     if (proposedEnd > endOfDay) {
          // Doesn't fit before close
          // We don't push it or push as locked
-         current = new Date(current.getTime() + TIME_SLICE_MINUTES * 60000);
+         current = new Date(current.getTime() + timeSliceMinutes * 60000);
          continue;
     }
 
@@ -134,7 +135,7 @@ export const generateSmartGrid = (
       score: aiScore
     });
 
-    current = new Date(current.getTime() + TIME_SLICE_MINUTES * 60000);
+    current = new Date(current.getTime() + timeSliceMinutes * 60000);
   }
   return slots;
 };

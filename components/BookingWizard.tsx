@@ -12,6 +12,7 @@ interface BookingWizardProps {
   shopRules: string;
   openHour: number;
   closeHour: number;
+  timeSliceMinutes: number; // New Prop
   // Context Props
   currentUser: Client; 
   currentRole: Role;
@@ -24,7 +25,7 @@ interface BookingWizardProps {
 }
 
 export const BookingWizard: React.FC<BookingWizardProps> = ({ 
-  barbers, services, clients, existingAppointments, shopRules, openHour, closeHour, 
+  barbers, services, clients, existingAppointments, shopRules, openHour, closeHour, timeSliceMinutes,
   currentUser, currentRole,
   onBook, onCancel, onCreateClient, onUpdateClient, onDeleteClient
 }) => {
@@ -61,9 +62,9 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Calculate Smart Grid (All Slots with Status)
+  // Calculate Smart Grid (All Slots with Status) with dynamic timeSlice
   const slotsGrid = selectedBarber && selectedService 
-    ? generateSmartGrid(selectedDate, selectedBarber.id, selectedService.durationMinutes, selectedBarber.speedFactor, existingAppointments, openHour, closeHour)
+    ? generateSmartGrid(selectedDate, selectedBarber.id, selectedService.durationMinutes, selectedBarber.speedFactor, existingAppointments, openHour, closeHour, timeSliceMinutes)
     : [];
 
   const changeDate = (days: number) => {

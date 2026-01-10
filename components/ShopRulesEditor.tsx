@@ -1,19 +1,21 @@
 
 import React, { useState } from 'react';
-import { X, Save, AlertCircle, FileText, Clock, Settings } from 'lucide-react';
+import { X, Save, AlertCircle, FileText, Clock, Settings, Grid } from 'lucide-react';
 
 interface ShopSettingsEditorProps {
   currentRules: string;
   currentOpenHour: number;
   currentCloseHour: number;
-  onSave: (settings: { rules: string; openHour: number; closeHour: number }) => void;
+  currentTimeSlice: number; // New Prop
+  onSave: (settings: { rules: string; openHour: number; closeHour: number; timeSlice: number }) => void;
   onClose: () => void;
 }
 
-export const ShopRulesEditor: React.FC<ShopSettingsEditorProps> = ({ currentRules, currentOpenHour, currentCloseHour, onSave, onClose }) => {
+export const ShopRulesEditor: React.FC<ShopSettingsEditorProps> = ({ currentRules, currentOpenHour, currentCloseHour, currentTimeSlice, onSave, onClose }) => {
   const [rules, setRules] = useState(currentRules);
   const [openHour, setOpenHour] = useState(currentOpenHour);
   const [closeHour, setCloseHour] = useState(currentCloseHour);
+  const [timeSlice, setTimeSlice] = useState(currentTimeSlice);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +23,7 @@ export const ShopRulesEditor: React.FC<ShopSettingsEditorProps> = ({ currentRule
         alert("La hora de cierre debe ser posterior a la de apertura.");
         return;
     }
-    onSave({ rules, openHour, closeHour });
+    onSave({ rules, openHour, closeHour, timeSlice });
     onClose();
   };
 
@@ -37,7 +39,7 @@ export const ShopRulesEditor: React.FC<ShopSettingsEditorProps> = ({ currentRule
                 </div>
                 <div>
                     <h2 className="text-xl font-bold text-white">Configuración General</h2>
-                    <p className="text-xs text-gray-500">Horarios de operación y reglas del negocio</p>
+                    <p className="text-xs text-gray-500">Horarios, grilla y reglas del negocio</p>
                 </div>
             </div>
             <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
@@ -50,44 +52,55 @@ export const ShopRulesEditor: React.FC<ShopSettingsEditorProps> = ({ currentRule
             {/* Hours Configuration */}
             <div className="space-y-4">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wide border-b border-dark-700 pb-2">
-                    <Clock size={16} className="text-brand-500" /> Horario de Atención
+                    <Clock size={16} className="text-brand-500" /> Horario y Agenda
                 </h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-dark-700/30 p-4 rounded-xl border border-dark-600">
-                        <label className="text-xs text-gray-400 uppercase font-bold mb-2 block">Hora de Apertura</label>
-                        <div className="flex items-center gap-3">
+                        <label className="text-xs text-gray-400 uppercase font-bold mb-2 block">Apertura</label>
+                        <div className="flex items-center gap-2">
                              <input 
                                 type="number" 
                                 min="0" 
                                 max="23"
                                 value={openHour}
                                 onChange={(e) => setOpenHour(Number(e.target.value))}
-                                className="w-20 bg-dark-900 border border-dark-600 rounded-lg p-2 text-center text-white font-mono font-bold text-lg focus:border-brand-500 outline-none"
+                                className="w-full bg-dark-900 border border-dark-600 rounded-lg p-2 text-center text-white font-mono font-bold text-lg focus:border-brand-500 outline-none"
                              />
-                             <span className="text-sm text-gray-400">
-                                {openHour === 0 ? '12:00 AM' : openHour < 12 ? `${openHour}:00 AM` : openHour === 12 ? '12:00 PM' : `${openHour - 12}:00 PM`}
-                             </span>
+                             <span className="text-xs text-gray-500">hrs</span>
                         </div>
-                        <p className="text-[10px] text-gray-500 mt-2">Inicio del grid en la agenda.</p>
                     </div>
 
                     <div className="bg-dark-700/30 p-4 rounded-xl border border-dark-600">
-                        <label className="text-xs text-gray-400 uppercase font-bold mb-2 block">Hora de Cierre</label>
-                        <div className="flex items-center gap-3">
+                        <label className="text-xs text-gray-400 uppercase font-bold mb-2 block">Cierre</label>
+                        <div className="flex items-center gap-2">
                              <input 
                                 type="number" 
                                 min="1" 
                                 max="24"
                                 value={closeHour}
                                 onChange={(e) => setCloseHour(Number(e.target.value))}
-                                className="w-20 bg-dark-900 border border-dark-600 rounded-lg p-2 text-center text-white font-mono font-bold text-lg focus:border-brand-500 outline-none"
+                                className="w-full bg-dark-900 border border-dark-600 rounded-lg p-2 text-center text-white font-mono font-bold text-lg focus:border-brand-500 outline-none"
                              />
-                             <span className="text-sm text-gray-400">
-                                {closeHour === 24 ? '12:00 AM (Día Sgte)' : closeHour < 12 ? `${closeHour}:00 AM` : closeHour === 12 ? '12:00 PM' : `${closeHour - 12}:00 PM`}
-                             </span>
+                             <span className="text-xs text-gray-500">hrs</span>
                         </div>
-                        <p className="text-[10px] text-gray-500 mt-2">Última hora visible. Se permiten citas hasta 30m antes.</p>
+                    </div>
+
+                    <div className="bg-dark-700/30 p-4 rounded-xl border border-brand-500/30 relative overflow-hidden">
+                        <label className="text-xs text-brand-400 uppercase font-bold mb-2 block flex items-center gap-1">
+                            <Grid size={12}/> Periodicidad
+                        </label>
+                        <select 
+                            value={timeSlice}
+                            onChange={(e) => setTimeSlice(Number(e.target.value))}
+                            className="w-full bg-dark-900 border border-dark-600 rounded-lg p-2 text-white font-mono font-bold text-lg focus:border-brand-500 outline-none appearance-none"
+                        >
+                            <option value="15">15 Min</option>
+                            <option value="30">30 Min</option>
+                            <option value="45">45 Min</option>
+                            <option value="60">60 Min</option>
+                        </select>
+                        <p className="text-[9px] text-gray-500 mt-2">Intervalo de bloques en la agenda.</p>
                     </div>
                 </div>
             </div>
