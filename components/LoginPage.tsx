@@ -135,7 +135,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, error }) => {
                     Protected by Chronos Security™
                 </p>
             </div>
-        </div >
-    </div >
-  );
+        </div>
+    );
 };
