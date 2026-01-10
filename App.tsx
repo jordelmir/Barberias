@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { INITIAL_APPOINTMENTS, BARBERS as INITIAL_BARBERS, SERVICES as DEFAULT_SERVICES, DEFAULT_OPEN_HOUR, DEFAULT_CLOSE_HOUR, INITIAL_CLIENTS, MOCK_ADMIN_USER, DEFAULT_STYLE_OPTIONS } from './constants';
 import { Appointment, Role, AppointmentStatus, Metrics, Client, BookingHistoryItem, Service, CutPreferences, Barber, GlobalStyleOptions } from './types';
 import { Timeline } from './components/Timeline';
@@ -19,23 +19,82 @@ import { calculateEndTime, canClientCancel } from './services/timeEngine';
 import { CancellationAnalysis } from './components/CancellationAnalysis'; // New Component
 import { Scissors, User, LayoutDashboard, Menu, Plus, Settings, FileText, Users, ChevronDown, Bell, LogOut, Briefcase, Lock, Tag, Gauge, BarChart3, AlertCircle } from 'lucide-react';
 import { useRealtimeAppointments } from './hooks/useRealtimeAppointments';
-
 export default function App() {
-    // Auth State
+    const [appointments, setAppointments] = useState<Appointment[]>(() => {
+        const saved = localStorage.getItem('barberia_appointments');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            return parsed.map((a: any) => ({
+                ...a,
+                startTime: new Date(a.startTime),
+                expectedEndTime: new Date(a.expectedEndTime),
+                actualStartTime: a.actualStartTime ? new Date(a.actualStartTime) : undefined,
+                actualEndTime: a.actualEndTime ? new Date(a.actualEndTime) : undefined,
+                cancellationDate: a.cancellationDate ? new Date(a.cancellationDate) : undefined
+            }));
+        }
+        return INITIAL_APPOINTMENTS;
+    });
+
+    const [services, setServices] = useState<Service[]>(() => {
+        const saved = localStorage.getItem('barberia_services');
+        return saved ? JSON.parse(saved) : DEFAULT_SERVICES;
+    });
+
+    // Persistence Layer (LocalStorage)
+    const [adminProfile, setAdminProfile] = useState<Client>(() => {
+        const saved = localStorage.getItem('barberia_admin_profile');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            return { ...parsed, joinDate: new Date(parsed.joinDate) };
+        }
+        return MOCK_ADMIN_USER;
+    });
+
+    const [clients, setClients] = useState<Client[]>(() => {
+        const saved = localStorage.getItem('barberia_clients');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            return parsed.map((c: any) => ({ ...c, joinDate: new Date(c.joinDate) }));
+        }
+        return INITIAL_CLIENTS;
+    });
+
+    const [barbers, setBarbers] = useState<Barber[]>(() => {
+        const saved = localStorage.getItem('barberia_barbers');
+        return saved ? JSON.parse(saved) : INITIAL_BARBERS;
+    });
+
+    // Save triggers
+    useEffect(() => {
+        localStorage.setItem('barberia_admin_profile', JSON.stringify(adminProfile));
+    }, [adminProfile]);
+
+    useEffect(() => {
+        localStorage.setItem('barberia_clients', JSON.stringify(clients));
+    }, [clients]);
+
+    useEffect(() => {
+        localStorage.setItem('barberia_barbers', JSON.stringify(barbers));
+    }, [barbers]);
+
+    useEffect(() => {
+        localStorage.setItem('barberia_appointments', JSON.stringify(appointments));
+    }, [appointments]);
+
+    useEffect(() => {
+        localStorage.setItem('barberia_services', JSON.stringify(services));
+    }, [services]);
+
+    const [loggedInUser, setLoggedInUser] = useState<Client>(adminProfile);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
     const [role, setRole] = useState<Role>(Role.ADMIN);
-    const [loggedInUser, setLoggedInUser] = useState<Client>(MOCK_ADMIN_USER);
     const [organizationId, setOrganizationId] = useState<string | null>(null);
-
-    // Data State
-    const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
 
     // ⚡ ENABLE REALTIME
     useRealtimeAppointments(organizationId, setAppointments);
-    const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
-    const [services, setServices] = useState<Service[]>(DEFAULT_SERVICES);
-    const [barbers, setBarbers] = useState<Barber[]>(INITIAL_BARBERS);
+    // Removed duplicate state initializations
     const [styleOptions, setStyleOptions] = useState<GlobalStyleOptions>(DEFAULT_STYLE_OPTIONS);
 
     // Shop Settings State (Dynamic)
@@ -88,11 +147,11 @@ export default function App() {
 
         // 1. Check Admin
         if (
-            (identity === MOCK_ADMIN_USER.identification || identity === MOCK_ADMIN_USER.email) &&
-            code === MOCK_ADMIN_USER.accessCode
+            (identity === adminProfile.identification || identity === adminProfile.email) &&
+            code === adminProfile.accessCode
         ) {
             setRole(Role.ADMIN);
-            setLoggedInUser(MOCK_ADMIN_USER);
+            setLoggedInUser(adminProfile);
             setIsAuthenticated(true);
             return;
         }
@@ -312,7 +371,9 @@ export default function App() {
             // Update Session
             setLoggedInUser(prev => ({ ...prev, ...updatedData }));
         } else if (role === Role.ADMIN) {
-            setLoggedInUser(prev => ({ ...prev, ...updatedData }));
+            const updatedAdmin = { ...adminProfile, ...updatedData };
+            setAdminProfile(updatedAdmin);
+            setLoggedInUser(updatedAdmin);
         }
     };
 
