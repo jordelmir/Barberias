@@ -1,9 +1,9 @@
 
 import React, { useMemo, useState } from 'react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid, Cell } from 'recharts';
 import { Metrics, Appointment, Service } from '../types';
 import { getHourlyLoad, getServiceBreakdown, calculateRevenueStats, RevenueStats, getRevenueTrend, TimeFrame } from '../services/timeEngine';
-import { TrendingUp, AlertOctagon, Banknote, Activity, Clock } from 'lucide-react';
+import { TrendingUp, AlertOctagon, Banknote, Activity, Clock, PieChart, Info } from 'lucide-react';
 
 interface MetricsPanelProps {
   metrics: Metrics;
@@ -23,6 +23,9 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, appointment
   
   // Pass dynamic services to the breakdown calculator
   const serviceData = useMemo(() => getServiceBreakdown(appointments, services), [appointments, services]);
+
+  // Calculate total services for percentage
+  const totalServicesCount = useMemo(() => serviceData.reduce((acc, curr) => acc + curr.value, 0), [serviceData]);
 
   // Comprehensive Revenue Calculation
   const revenueStats: RevenueStats = useMemo(() => calculateRevenueStats(appointments, currentDate), [appointments, currentDate]);
@@ -58,6 +61,29 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, appointment
           <p className="text-emerald-400 font-mono font-bold text-sm">
             ₡{payload[0].value.toLocaleString('es-CR')}
           </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Custom Tooltip for Service Mix to show Percentage
+  const ServiceTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const value = payload[0].value;
+      const percentage = totalServicesCount > 0 ? ((value / totalServicesCount) * 100).toFixed(1) : 0;
+      
+      return (
+        <div className="bg-dark-900 border border-purple-500/30 p-3 rounded-lg shadow-2xl backdrop-blur-md">
+          <p className="text-white text-xs font-bold mb-1 border-b border-white/10 pb-1">{label}</p>
+          <div className="flex justify-between items-center gap-4 mt-1">
+             <p className="text-gray-400 text-xs">Cantidad:</p>
+             <p className="text-purple-400 font-mono font-bold text-sm">{value}</p>
+          </div>
+          <div className="flex justify-between items-center gap-4">
+             <p className="text-gray-400 text-xs">Share:</p>
+             <p className="text-white font-mono font-bold text-xs">{percentage}%</p>
+          </div>
         </div>
       );
     }
@@ -227,19 +253,47 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, appointment
                 </ResponsiveContainer>
             </div>
 
-            <div className="glass-morphism p-5 rounded-xl shadow-lg h-72">
-                <h3 className="text-gray-400 text-xs font-bold uppercase mb-6 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]"></span>
-                    Mix de Servicios
+            {/* --- UPDATED: MIX DE SERVICIOS --- */}
+            <div className="glass-morphism p-5 rounded-xl shadow-lg h-72 flex flex-col">
+                <h3 className="text-gray-400 text-xs font-bold uppercase mb-2 flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]"></span>
+                        Mix de Servicios
+                    </span>
+                    <span className="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded border border-white/5">Top Rendimiento</span>
                 </h3>
-                <ResponsiveContainer width="100%" height="85%">
-                <BarChart data={serviceData} layout="vertical">
-                    <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" stroke="#9CA3AF" tick={{fontSize: 11, fill: '#9CA3AF'}} tickLine={false} axisLine={false} width={100} />
-                    <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ backgroundColor: '#1E1E1E', borderColor: '#2D2D2D', color: '#fff', borderRadius: '8px' }} />
-                    <Bar dataKey="value" fill="#A855F7" radius={[0, 4, 4, 0]} barSize={24} animationDuration={1000} />
-                </BarChart>
-                </ResponsiveContainer>
+                
+                {serviceData.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-gray-600 opacity-50">
+                        <PieChart size={32} className="mb-2"/>
+                        <p className="text-xs font-mono uppercase">Sin datos suficientes</p>
+                    </div>
+                ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart 
+                            data={serviceData} 
+                            layout="vertical" 
+                            margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+                        >
+                            <XAxis type="number" hide />
+                            <YAxis 
+                                dataKey="name" 
+                                type="category" 
+                                stroke="#9CA3AF" 
+                                tick={{fontSize: 10, fill: '#D1D5DB', fontWeight: 500}} 
+                                tickLine={false} 
+                                axisLine={false} 
+                                width={120} // Increased width for longer names
+                            />
+                            <Tooltip cursor={{fill: 'rgba(168, 85, 247, 0.05)'}} content={<ServiceTooltip />} />
+                            <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20} animationDuration={1000}>
+                                {serviceData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={index === 0 ? '#a855f7' : '#7e22ce'} fillOpacity={1 - (index * 0.15)} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                )}
             </div>
         </div>
     </div>

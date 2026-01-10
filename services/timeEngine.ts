@@ -177,11 +177,15 @@ export const getServiceBreakdown = (appointments: Appointment[], services: any[]
   appointments.forEach(apt => {
     if (apt.status === AppointmentStatus.CANCELLED) return;
     const s = services.find(srv => srv.id === apt.serviceId);
-    const name = s ? s.name.split(' ')[0] : 'Unknown'; // Short name
+    // CRITICAL UPDATE: Use full name, do not split
+    const name = s ? s.name : 'Unknown'; 
     counts[name] = (counts[name] || 0) + 1;
   });
 
-  return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  // Convert to array and sort by value DESCENDING (Most popular first)
+  return Object.entries(counts)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
 };
 
 // --- Revenue Logic ---
