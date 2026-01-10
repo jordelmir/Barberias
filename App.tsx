@@ -117,6 +117,7 @@ export default function App() {
                 joinDate: new Date(),
                 points: 0,
                 avatar: barberFound.avatar,
+                sticker: barberFound.sticker,
                 notes: `Staff: ${barberFound.tier}`
             };
             setLoggedInUser(barberAsUser);
@@ -300,16 +301,16 @@ export default function App() {
             handleUpdateClient(updatedClient);
         } else if (role === Role.BARBER) {
             // If it's a barber, we must update the Barber list AND the current user session wrapper
+            const barber = barbers.find(b => b.id === loggedInUser.id)!;
             const updatedBarber: Barber = {
-                ...barbers.find(b => b.id === loggedInUser.id)!,
-                avatar: updatedData.avatar || '',
-                // Can add more fields here if we allow editing name/email self-service
+                ...barber,
+                ...(updatedData as Partial<Barber>)
             };
 
             handleUpdateBarber(updatedBarber);
 
             // Update Session
-            setLoggedInUser(prev => ({ ...prev, avatar: updatedBarber.avatar }));
+            setLoggedInUser(prev => ({ ...prev, ...updatedData }));
         } else if (role === Role.ADMIN) {
             setLoggedInUser(prev => ({ ...prev, ...updatedData }));
         }
