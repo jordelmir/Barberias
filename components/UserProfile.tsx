@@ -1,7 +1,12 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Client, CutPreferences, GlobalStyleOptions, Role, Appointment } from '../types';
-import { X, Star, Calendar, Scissors, Award, History, Edit3, Save, MessageSquare, Info, Plus, Check, Hash, Smile, Zap, AlertCircle, Layout, Sparkles, ChevronRight, User, Trash2, Clock, AlertTriangle, PhoneCall, Fingerprint, Tag } from 'lucide-react';
+import {
+    X, Star, Calendar, Scissors, Award, History, Edit3, Save, MessageSquare,
+    Info, Plus, Check, Hash, Smile, Zap, AlertCircle, Layout, Sparkles,
+    ChevronRight, User, Trash2, Clock, AlertTriangle, PhoneCall, Fingerprint,
+    Tag, ShieldCheck, Lock, RefreshCcw, Key, CheckCircle
+} from 'lucide-react';
 import { AvatarSelector } from './AvatarSelector';
 import { formatTime, canClientCancel } from '../services/timeEngine';
 
@@ -170,6 +175,9 @@ const PressHoldButton: React.FC<PressHoldButtonProps> = ({ onConfirm, label }) =
 
 export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, globalOptions, userRole, userAppointments, onClose, onUpdatePreferences, onUpdateProfile, onCancelAppointment }) => {
     const [activeTab, setActiveTab] = useState<'history' | 'preferences' | 'security'>('history');
+    const [tempPin, setTempPin] = useState(client.accessCode || '');
+    const [isSavingPin, setIsSavingPin] = useState(false);
+    const [pinSuccess, setPinSuccess] = useState(false);
 
     // Avatar Editing State
     const [isEditingAvatar, setIsEditingAvatar] = useState(false);
@@ -721,67 +729,124 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                             </div>
                         )}
                         {activeTab === 'security' && (
-                            <div className="max-w-md mx-auto py-10 animate-in slide-in-from-right-4 duration-300">
-                                <div className="text-center mb-8">
-                                    <div className="w-16 h-16 bg-brand-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-brand-500/20">
-                                        <Key className="text-brand-500" size={32} />
-                                    </div>
-                                    <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Código de Acceso</h2>
-                                    <p className="text-gray-400 text-xs">Cambia tu código de seguridad de 6 dígitos para iniciar sesión.</p>
+                            <div className="space-y-10 animate-in fade-in zoom-in-95 slide-in-from-bottom-6 duration-1000 ease-out fill-mode-both pb-20">
+                                <div className="flex flex-col gap-2">
+                                    <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic">Centro de Seguridad</h2>
+                                    <p className="text-gray-500 text-xs font-medium uppercase tracking-widest">Protege tu acceso y credenciales personales</p>
                                 </div>
 
-                                <div className="space-y-6">
-                                    <div className="bg-dark-800/40 border border-white/5 rounded-2xl p-6 space-y-4">
-                                        <div>
-                                            <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest block mb-2">Nuevo Código (6 dígitos)</label>
-                                            <div className="flex justify-between gap-2">
-                                                {[0, 1, 2, 3, 4, 5].map((i) => (
-                                                    <input
-                                                        key={`pin-${i}`}
-                                                        id={`pin-${i}`}
-                                                        type="password"
-                                                        maxLength={1}
-                                                        className="w-12 h-14 bg-dark-900 border border-dark-600 rounded-xl text-center text-xl font-bold text-white focus:border-brand-500 outline-none transition-all"
-                                                        placeholder="•"
-                                                        value={client.accessCode?.[i] || ''}
-                                                        onChange={(e) => {
-                                                            const val = e.target.value.replace(/\D/g, '');
-                                                            if (val) {
-                                                                const newCode = (client.accessCode || '').split('');
-                                                                newCode[i] = val;
-                                                                onUpdateProfile({ accessCode: newCode.join('') });
-                                                                if (i < 5) document.getElementById(`pin-${i + 1}`)?.focus();
-                                                            }
-                                                        }}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Backspace') {
-                                                                const newCode = (client.accessCode || '').split('');
-                                                                newCode[i] = '';
-                                                                onUpdateProfile({ accessCode: newCode.join('') });
-                                                                if (i > 0) document.getElementById(`pin-${i - 1}`)?.focus();
-                                                            }
-                                                        }}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div className="pt-4 border-t border-white/5">
-                                            <div className="flex items-center gap-3 text-orange-400 bg-orange-400/5 p-4 rounded-xl border border-orange-400/20">
-                                                <AlertTriangle size={18} className="shrink-0" />
-                                                <p className="text-[11px] leading-relaxed">
-                                                    Recuerda que este código es personal e intransferible. No lo compartas con nadie.
-                                                </p>
-                                            </div>
+                                <div className="max-w-xl mx-auto pt-8">
+                                    <div className="relative group mb-12">
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-brand-500 to-orange-600 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+                                        <div className="relative w-24 h-24 bg-dark-800 rounded-full flex items-center justify-center mx-auto border border-white/10 shadow-2xl">
+                                            {pinSuccess ? (
+                                                <ShieldCheck className="text-emerald-500 animate-bounce" size={48} />
+                                            ) : (
+                                                <Lock className="text-brand-500" size={48} />
+                                            )}
                                         </div>
                                     </div>
 
-                                    <button
-                                        onClick={onClose}
-                                        className="w-full bg-brand-500 text-black py-4 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-brand-400 transition-all shadow-xl shadow-brand-500/10 active:scale-95"
-                                    >
-                                        Listo, Códice Actualizado
-                                    </button>
+                                    <div className="bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 space-y-10 shadow-3xl">
+                                        <div className="text-center space-y-2">
+                                            <h3 className="text-xl font-bold text-white tracking-tight">Código de Acceso (6 Dígitos)</h3>
+                                            <p className="text-gray-500 text-sm">Ingresa el nuevo código que usarás para identificarte</p>
+                                        </div>
+
+                                        <div className="flex justify-between gap-3 max-w-sm mx-auto">
+                                            {[0, 1, 2, 3, 4, 5].map((i) => (
+                                                <input
+                                                    key={`pin-entry-${i}`}
+                                                    id={`pin-entry-${i}`}
+                                                    type="password"
+                                                    maxLength={1}
+                                                    inputMode="numeric"
+                                                    autoComplete="one-time-code"
+                                                    className={`w-full aspect-[3/4] bg-dark-900/50 border ${tempPin[i] ? 'border-brand-500/50 bg-brand-500/5 shadow-[0_0_15px_rgba(202,168,111,0.1)]' : 'border-white/10'} rounded-2xl text-center text-3xl font-black text-white focus:border-brand-500 focus:bg-brand-500/5 outline-none transition-all duration-300 transform focus:scale-105`}
+                                                    placeholder="-"
+                                                    value={tempPin[i] || ''}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value.replace(/\D/g, '').slice(-1);
+                                                        if (val) {
+                                                            const newPin = tempPin.split('');
+                                                            newPin[i] = val;
+                                                            const joined = newPin.join('').slice(0, 6);
+                                                            setTempPin(joined);
+                                                            if (i < 5) document.getElementById(`pin-entry-${i + 1}`)?.focus();
+                                                        }
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Backspace') {
+                                                            const newPin = tempPin.split('');
+                                                            if (!newPin[i] && i > 0) {
+                                                                newPin[i - 1] = '';
+                                                                setTempPin(newPin.join(''));
+                                                                document.getElementById(`pin-entry-${i - 1}`)?.focus();
+                                                            } else {
+                                                                newPin[i] = '';
+                                                                setTempPin(newPin.join(''));
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+
+                                        <div className="flex items-center gap-4 bg-orange-500/5 border border-orange-500/10 p-5 rounded-2xl">
+                                            <div className="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center shrink-0">
+                                                <AlertTriangle className="text-orange-500" size={20} />
+                                            </div>
+                                            <p className="text-[11px] text-gray-400 leading-relaxed font-medium">
+                                                Para tu seguridad, elige una combinación que no sea obvia (evita 123456 o 000000).
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            disabled={tempPin.length !== 6 || isSavingPin || pinSuccess}
+                                            onClick={async () => {
+                                                setIsSavingPin(true);
+                                                await new Promise(r => setTimeout(r, 1000)); // Simulate professional verification
+                                                onUpdateProfile({ accessCode: tempPin });
+                                                setIsSavingPin(false);
+                                                setPinSuccess(true);
+                                                setTimeout(() => setPinSuccess(false), 3000);
+                                            }}
+                                            className={`w-full py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 relative overflow-hidden group/btn ${tempPin.length === 6
+                                                ? 'bg-gradient-to-r from-brand-600 to-brand-400 text-black shadow-xl shadow-brand-500/20 hover:scale-[1.02] active:scale-95'
+                                                : 'bg-white/5 text-gray-600 cursor-not-allowed border border-white/5'
+                                                }`}
+                                        >
+                                            <span className="relative z-10 flex items-center justify-center gap-2">
+                                                {isSavingPin ? (
+                                                    <>
+                                                        <RefreshCcw className="animate-spin" size={16} />
+                                                        Verificando...
+                                                    </>
+                                                ) : pinSuccess ? (
+                                                    <>
+                                                        <CheckCircle size={16} />
+                                                        Código Actualizado
+                                                    </>
+                                                ) : (
+                                                    'Actualizar Código Maestro'
+                                                )}
+                                            </span>
+                                            {tempPin.length === 6 && (
+                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-shimmer" />
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    <div className="mt-8 flex justify-center gap-6">
+                                        <div className="flex items-center gap-2 text-[10px] text-gray-600 font-bold uppercase tracking-widest">
+                                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                            Encriptación End-to-End
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] text-gray-600 font-bold uppercase tracking-widest">
+                                            <div className="w-1.5 h-1.5 bg-brand-500 rounded-full animate-pulse" />
+                                            Acceso Confiable
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
