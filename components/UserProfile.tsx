@@ -169,7 +169,7 @@ const PressHoldButton: React.FC<PressHoldButtonProps> = ({ onConfirm, label }) =
 
 
 export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, globalOptions, userRole, userAppointments, onClose, onUpdatePreferences, onUpdateProfile, onCancelAppointment }) => {
-    const [activeTab, setActiveTab] = useState<'history' | 'preferences'>('history');
+    const [activeTab, setActiveTab] = useState<'history' | 'preferences' | 'security'>('history');
 
     // Avatar Editing State
     const [isEditingAvatar, setIsEditingAvatar] = useState(false);
@@ -415,7 +415,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                     <div className="flex items-center border-b border-white/5 bg-dark-900/30 px-6 pt-2 sticky top-0 z-40 backdrop-blur-md shrink-0">
                         {[
                             { id: 'history', label: 'Mis Citas & Historial', icon: History },
-                            { id: 'preferences', label: 'Mi Estilo', icon: Award }
+                            { id: 'preferences', label: 'Mi Estilo', icon: Award },
+                            { id: 'security', label: 'Seguridad', icon: Fingerprint }
                         ].map((tab) => (
                             <button
                                 key={tab.id}
@@ -716,6 +717,71 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                                             />
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        )}
+                        {activeTab === 'security' && (
+                            <div className="max-w-md mx-auto py-10 animate-in slide-in-from-right-4 duration-300">
+                                <div className="text-center mb-8">
+                                    <div className="w-16 h-16 bg-brand-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-brand-500/20">
+                                        <Key className="text-brand-500" size={32} />
+                                    </div>
+                                    <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Código de Acceso</h2>
+                                    <p className="text-gray-400 text-xs">Cambia tu código de seguridad de 6 dígitos para iniciar sesión.</p>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className="bg-dark-800/40 border border-white/5 rounded-2xl p-6 space-y-4">
+                                        <div>
+                                            <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest block mb-2">Nuevo Código (6 dígitos)</label>
+                                            <div className="flex justify-between gap-2">
+                                                {[0, 1, 2, 3, 4, 5].map((i) => (
+                                                    <input
+                                                        key={`pin-${i}`}
+                                                        id={`pin-${i}`}
+                                                        type="password"
+                                                        maxLength={1}
+                                                        className="w-12 h-14 bg-dark-900 border border-dark-600 rounded-xl text-center text-xl font-bold text-white focus:border-brand-500 outline-none transition-all"
+                                                        placeholder="•"
+                                                        value={client.accessCode?.[i] || ''}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value.replace(/\D/g, '');
+                                                            if (val) {
+                                                                const newCode = (client.accessCode || '').split('');
+                                                                newCode[i] = val;
+                                                                onUpdateProfile({ accessCode: newCode.join('') });
+                                                                if (i < 5) document.getElementById(`pin-${i + 1}`)?.focus();
+                                                            }
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Backspace') {
+                                                                const newCode = (client.accessCode || '').split('');
+                                                                newCode[i] = '';
+                                                                onUpdateProfile({ accessCode: newCode.join('') });
+                                                                if (i > 0) document.getElementById(`pin-${i - 1}`)?.focus();
+                                                            }
+                                                        }}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 border-t border-white/5">
+                                            <div className="flex items-center gap-3 text-orange-400 bg-orange-400/5 p-4 rounded-xl border border-orange-400/20">
+                                                <AlertTriangle size={18} className="shrink-0" />
+                                                <p className="text-[11px] leading-relaxed">
+                                                    Recuerda que este código es personal e intransferible. No lo compartas con nadie.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={onClose}
+                                        className="w-full bg-brand-500 text-black py-4 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-brand-400 transition-all shadow-xl shadow-brand-500/10 active:scale-95"
+                                    >
+                                        Listo, Códice Actualizado
+                                    </button>
                                 </div>
                             </div>
                         )}
