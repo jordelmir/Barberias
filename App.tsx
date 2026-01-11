@@ -17,8 +17,9 @@ import { LoginPage } from './components/LoginPage';
 import { MatrixBackground } from './components/MatrixBackground'; // Visual Upgrade
 import { calculateEndTime, canClientCancel } from './services/timeEngine';
 import { CancellationAnalysis } from './components/CancellationAnalysis'; // New Component
-import { Scissors, User, LayoutDashboard, Menu, Plus, Settings, FileText, Users, ChevronDown, Bell, LogOut, Briefcase, Lock, Tag, Gauge, BarChart3, AlertCircle, Gamepad2, Zap } from 'lucide-react';
+import { Scissors, User, LayoutDashboard, Menu, Plus, Settings, FileText, Users, ChevronDown, Bell, LogOut, Briefcase, Lock, Tag, Gauge, BarChart3, AlertCircle, Gamepad2, Zap, X } from 'lucide-react';
 import { SnakeGame } from './components/SnakeGame';
+import { ArcadePage } from './components/ArcadePage';
 import { useRealtimeAppointments } from './hooks/useRealtimeAppointments';
 export default function App() {
     const [appointments, setAppointments] = useState<Appointment[]>(() => {
@@ -114,6 +115,8 @@ export default function App() {
     const [isShopRulesOpen, setIsShopRulesOpen] = useState(false);
     const [isStyleEditorOpen, setIsStyleEditorOpen] = useState(false);
     const [isCancellationReportOpen, setIsCancellationReportOpen] = useState(false); // New state for report
+    const [isGamingMode, setIsGamingMode] = useState(false); // NEW: Full-screen theater mode
+    const [isArcadePageOpen, setIsArcadePageOpen] = useState(false); // DEDICATED PAGE
     const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
 
     // ADMIN SPECIFIC STATE: View Mode (Dashboard vs Workstation)
@@ -652,64 +655,119 @@ export default function App() {
                         </>
                     ) : (
                         // CLIENT VIEW
-                        <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-8 p-4 md:p-8 animate-in zoom-in-95 duration-500">
-                            {/* LEFT SIDE: GAME ZONE */}
-                            <div className="w-full max-w-sm shrink-0 hidden lg:block">
-                                <div className="glass-morphism rounded-2xl p-6 border border-brand-500/20 relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        <Gamepad2 size={80} />
-                                    </div>
-                                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-4 flex items-center gap-2">
-                                        <Zap className="text-brand-500" size={20} />
-                                        Zona de Juego
-                                    </h3>
-                                    <SnakeGame />
-                                    <p className="text-[10px] text-gray-500 text-center mt-4 font-bold uppercase tracking-widest opacity-60">
-                                        Entrena tus reflejos mientras esperas
-                                    </p>
-                                </div>
-                            </div>
+                        <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 animate-in zoom-in-95 duration-500">
+                            {/* PROFESSIONAL CLIENT HUB */}
+                            <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-                            {/* RIGHT SIDE: PROFILE & WIZARD */}
-                            <div className="w-full max-w-md space-y-4 relative z-10">
-                                <div className="glass-morphism-inner p-4 rounded-lg flex items-start gap-3 backdrop-blur-md border border-brand-500/20">
-                                    <User className="text-brand-500 mt-1" size={20} />
-                                    <div>
-                                        <p className="text-sm text-brand-200 font-bold">Modo Cliente Activo</p>
-                                        <p className="text-xs text-gray-400 mt-1">
-                                            Bienvenido, {loggedInUser.name.split(' ')[0]}.
-                                            <span className="ml-2 inline-flex items-center gap-1 text-emerald-500 animate-pulse font-bold">
-                                                <div className="w-1 h-1 bg-emerald-500 rounded-full" /> En línea
-                                            </span>
-                                        </p>
+                                {/* LEFT: QUICK BOOKING BOX (Col 1-5) */}
+                                <div className="lg:col-span-5 space-y-6 order-2 lg:order-1">
+                                    <div className="glass-morphism-inner p-8 rounded-[2.5rem] border border-white/10 space-y-8 relative overflow-hidden group">
+                                        <div className="absolute inset-0 bg-brand-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                                        <div className="relative">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em]">Citas Disponibles</span>
+                                            </div>
+                                            <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic leading-[0.9] mb-4">Reserva tu<br />Experiencia</h2>
+                                            <p className="text-gray-400 text-xs font-medium leading-relaxed mb-6">Elige el servicio que mejor se adapte a tu estilo y asegura tu lugar con los expertos.</p>
+                                        </div>
+
+                                        <div className="glass-morphism rounded-2xl border border-white/5 overflow-hidden">
+                                            <BookingWizard
+                                                barbers={barbers}
+                                                services={services}
+                                                clients={clients}
+                                                existingAppointments={appointments}
+                                                shopRules={shopRules}
+                                                openHour={openHour}
+                                                closeHour={closeHour}
+                                                timeSliceMinutes={timeSliceMinutes}
+                                                currentUser={loggedInUser}
+                                                currentRole={role}
+                                                onBook={handleBook}
+                                                onCancel={() => { }}
+                                                onCreateClient={handleCreateClient}
+                                                onUpdateClient={handleUpdateClient}
+                                                onDeleteClient={handleDeleteClient}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Stats for Trust */}
+                                    <div className="grid grid-cols-3 gap-4 px-4">
+                                        <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/5">
+                                            <p className="text-xl font-black text-white">{barbers.length}</p>
+                                            <p className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Expertos</p>
+                                        </div>
+                                        <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/5">
+                                            <p className="text-xl font-black text-white">{services.length}</p>
+                                            <p className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Estilos</p>
+                                        </div>
+                                        <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/5">
+                                            <p className="text-xl font-black text-white">100%</p>
+                                            <p className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Calidad</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="glass-morphism rounded-xl shadow-2xl bg-dark-900/40 backdrop-blur-xl">
-                                    <BookingWizard
-                                        barbers={barbers}
-                                        services={services}
-                                        clients={clients}
-                                        existingAppointments={appointments}
-                                        shopRules={shopRules}
-                                        openHour={openHour}
-                                        closeHour={closeHour}
-                                        timeSliceMinutes={timeSliceMinutes}
-                                        currentUser={loggedInUser}
-                                        currentRole={role}
-                                        onBook={handleBook}
-                                        onCancel={() => { }}
-                                        onCreateClient={handleCreateClient}
-                                        onUpdateClient={handleUpdateClient}
-                                        onDeleteClient={handleDeleteClient}
-                                    />
-                                </div>
 
-                                {/* Mobile Game View Toggle or Hint */}
-                                <div className="lg:hidden glass-morphism-inner p-4 rounded-xl text-center border border-white/5">
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-                                        <Gamepad2 size={12} className="text-brand-500" />
-                                        Juego disponible en tu perfil
-                                    </p>
+                                {/* RIGHT: ARCADE & PROFILE (Col 6-12) */}
+                                <div className="lg:col-span-7 space-y-6 order-1 lg:order-2">
+                                    {/* WELCOME BANNER */}
+                                    <div className="glass-morphism-inner p-6 rounded-2xl flex items-center justify-between backdrop-blur-md border border-brand-500/20">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
+                                                <User className="text-brand-500" size={24} />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Bienvenido de nuevo</p>
+                                                <h3 className="text-xl font-black text-white italic">{loggedInUser.name}</h3>
+                                            </div>
+                                        </div>
+                                        <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+                                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                                            <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">Sesión Segura</span>
+                                        </div>
+                                    </div>
+
+                                    {/* ARCADE THEATER TEASER */}
+                                    <div className="glass-morphism rounded-[2.5rem] border border-white/10 overflow-hidden group/game relative">
+                                        {/* Dynamic Gradient Background */}
+                                        <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-emerald-500/5 to-transparent opacity-0 group-hover/game:opacity-100 transition-opacity duration-1000" />
+
+                                        <div className="relative p-8">
+                                            <div className="flex items-center justify-between mb-8">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover/game:border-brand-500/40 transition-all duration-500 group-hover/game:shadow-[0_0_30px_rgba(202,168,111,0.2)]">
+                                                        <Gamepad2 className="text-brand-500 group-hover/game:scale-110 transition-transform" size={28} />
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <div className="w-1 h-1 bg-brand-500 rounded-full animate-ping" />
+                                                            <p className="text-gray-500 text-[9px] font-black uppercase tracking-[0.4em]">Entertainment Hub</p>
+                                                        </div>
+                                                        <h3 className="text-2xl font-black text-white tracking-tight italic uppercase">Chronos Arcade</h3>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => setIsArcadePageOpen(true)}
+                                                    className="px-6 py-3 bg-brand-500 text-black rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-400 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-brand-500/20"
+                                                >
+                                                    Abrir Zona Pro Arcade
+                                                </button>
+                                            </div>
+
+                                            <div className="bg-dark-950/80 rounded-3xl border border-white/5 p-6 relative group/screen overflow-hidden">
+                                                {/* Ambient Screen Glow */}
+                                                <div className="absolute inset-0 bg-brand-500/5 opacity-0 group-hover/screen:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                                                <SnakeGame />
+                                                <div className="absolute inset-x-0 bottom-4 flex justify-center opacity-0 group-hover/game:opacity-100 transition-opacity">
+                                                    <div className="px-4 py-2 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-[9px] text-gray-400 font-bold uppercase tracking-[0.2em]">
+                                                        Usa las flechas para jugar • Clic para Pantalla Completa
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -828,7 +886,14 @@ export default function App() {
                     onClose={() => setIsProfileOpen(false)}
                     onUpdatePreferences={handleUpdatePreferences}
                     onUpdateProfile={handleUpdateProfile} // Added profile update handler
-                    onCancelAppointment={handleCancelAppointment}
+                />
+            )}
+
+            {/* WORLD-CLASS DEDICATED ARCADE PAGE */}
+            {isArcadePageOpen && (
+                <ArcadePage
+                    playerName={loggedInUser?.name || 'Invitado'}
+                    onBack={() => setIsArcadePageOpen(false)}
                 />
             )}
         </div>

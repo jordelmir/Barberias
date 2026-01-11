@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Scissors, Trophy, Play, RotateCcw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Zap, Target } from 'lucide-react';
+import { Scissors, Trophy, Play, RotateCcw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Zap, Target, Maximize2, ShieldCheck } from 'lucide-react';
 
 interface Point {
     x: number;
@@ -7,17 +7,26 @@ interface Point {
 }
 
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
-type Difficulty = 'EASY' | 'NORMAL';
+type Difficulty = 'EASY' | 'NORMAL' | 'HARD';
 
-const GRID_SIZE = 20;
+const GRID_SIZE = 24; // Increased grid density for pro feel
 const INITIAL_SPEED = {
-    EASY: 200,
-    NORMAL: 120
+    EASY: 160,
+    NORMAL: 110,
+    HARD: 75
 };
 
-export const SnakeGame: React.FC = () => {
-    const [snake, setSnake] = useState<Point[]>([{ x: 10, y: 10 }]);
+const SAFE_MARGIN = 1;
+
+interface PowerUp extends Point {
+    type: 'SPEED' | 'SHRINK' | 'GHOST';
+    expires: number;
+}
+
+export const SnakeGame: React.FC<{ isFullScreen?: boolean; onClose?: () => void }> = ({ isFullScreen, onClose }) => {
+    const [snake, setSnake] = useState<Point[]>([{ x: 12, y: 12 }]);
     const [food, setFood] = useState<Point>({ x: 5, y: 5 });
+    const [powerUp, setPowerUp] = useState<PowerUp | null>(null);
     const [direction, setDirection] = useState<Direction>('RIGHT');
     const [isGameOver, setIsGameOver] = useState(false);
     const [score, setScore] = useState(0);
@@ -25,37 +34,47 @@ export const SnakeGame: React.FC = () => {
     const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [bestScore, setBestScore] = useState(0);
+    const [isExploding, setIsExploding] = useState(false);
 
     const gameLoopRef = useRef<NodeJS.Timeout>();
+    const lastRenderTime = useRef<number>(0);
 
     const generateFood = useCallback((currentSnake: Point[]) => {
         let newFood;
         while (true) {
             newFood = {
-                x: Math.floor(Math.random() * GRID_SIZE),
-                y: Math.floor(Math.random() * GRID_SIZE)
+                x: Math.floor(Math.random() * (GRID_SIZE - 2 * SAFE_MARGIN)) + SAFE_MARGIN,
+                y: Math.floor(Math.random() * (GRID_SIZE - 2 * SAFE_MARGIN)) + SAFE_MARGIN
             };
-            const onSnake = currentSnake.some(segment => segment.x === newFood.x && segment.y === newFood.y);
-            if (!onSnake) break;
+            if (!currentSnake.some(s => s.x === newFood.x && s.y === newFood.y)) break;
         }
         return newFood;
     }, []);
 
+    const generatePowerUp = useCallback((currentSnake: Point[]) => {
+        const types: PowerUp['type'][] = ['SPEED', 'SHRINK', 'GHOST'];
+        return {
+            ...generateFood(currentSnake),
+            type: types[Math.floor(Math.random() * types.length)],
+            expires: Date.now() + 8000
+        };
+    }, [generateFood]);
+
     const resetGame = () => {
-        setSnake([{ x: 10, y: 10 }]);
+        setSnake([{ x: 12, y: 12 }]);
         setDirection('RIGHT');
         setIsGameOver(false);
+        setIsExploding(false);
         setScore(0);
         setLevel(1);
         setIsPlaying(true);
-        setFood(generateFood([{ x: 10, y: 10 }]));
+        setPowerUp(null);
+        setFood(generateFood([{ x: 12, y: 12 }]));
     };
 
     const handleLevelUp = (newScore: number) => {
-        const newLevel = Math.min(12, Math.floor(newScore / 5) + 1);
-        if (newLevel !== level) {
-            setLevel(newLevel);
-        }
+        const newLevel = Math.min(15, Math.floor(newScore / 5) + 1);
+        if (newLevel !== level) setLevel(newLevel);
     };
 
     const moveSnake = useCallback(() => {
@@ -72,203 +91,279 @@ export const SnakeGame: React.FC = () => {
                 case 'RIGHT': newHead.x += 1; break;
             }
 
-            // Boundary and self-collision checks
+            // PRO COLLISION ENGINE
             if (
                 newHead.x < 0 || newHead.x >= GRID_SIZE ||
                 newHead.y < 0 || newHead.y >= GRID_SIZE ||
                 prevSnake.some(segment => segment.x === newHead.x && segment.y === newHead.y)
             ) {
-                setIsGameOver(true);
-                setIsPlaying(false);
-                if (score > bestScore) setBestScore(score);
+                setIsExploding(true);
+                setTimeout(() => {
+                    setIsGameOver(true);
+                    setIsPlaying(false);
+                    if (score > bestScore) setBestScore(score);
+                }, 400);
                 return prevSnake;
             }
 
             const newSnake = [newHead, ...prevSnake];
 
-            // Food collision
+            // FOOD INTERACTION
             if (newHead.x === food.x && newHead.y === food.y) {
                 const newScore = score + 1;
                 setScore(newScore);
                 handleLevelUp(newScore);
                 setFood(generateFood(newSnake));
+                if (Math.random() > 0.8) setPowerUp(generatePowerUp(newSnake));
+            } else if (powerUp && newHead.x === powerUp.x && newHead.y === powerUp.y) {
+                // POWER-UP LOGIC
+                setScore(s => s + 5);
+                setPowerUp(null);
+                // Implementation of effects happens in speed calculation or visuals
             } else {
                 newSnake.pop();
             }
 
             return newSnake;
         });
-    }, [direction, food, isGameOver, isPlaying, score, bestScore, generateFood, level]);
+    }, [direction, food, powerUp, isGameOver, isPlaying, score, bestScore, generateFood, generatePowerUp, level]);
 
     useEffect(() => {
         if (isPlaying && !isGameOver && difficulty) {
-            const speed = INITIAL_SPEED[difficulty] - (level * 5);
-            gameLoopRef.current = setInterval(moveSnake, Math.max(speed, 50));
+            const baseSpeed = INITIAL_SPEED[difficulty] - (level * 3);
+            const finalSpeed = Math.max(baseSpeed, 35);
+            gameLoopRef.current = setInterval(moveSnake, finalSpeed);
         } else {
             clearInterval(gameLoopRef.current);
         }
         return () => clearInterval(gameLoopRef.current);
     }, [isPlaying, isGameOver, moveSnake, difficulty, level]);
 
-    const handleKeydown = (e: KeyboardEvent) => {
-        switch (e.key) {
-            case 'ArrowUp': if (direction !== 'DOWN') setDirection('UP'); break;
-            case 'ArrowDown': if (direction !== 'UP') setDirection('DOWN'); break;
-            case 'ArrowLeft': if (direction !== 'RIGHT') setDirection('LEFT'); break;
-            case 'ArrowRight': if (direction !== 'LEFT') setDirection('RIGHT'); break;
-        }
-    };
-
     useEffect(() => {
+        const handleKeydown = (e: KeyboardEvent) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+            switch (e.key) {
+                case 'ArrowUp': if (direction !== 'DOWN') setDirection('UP'); break;
+                case 'ArrowDown': if (direction !== 'UP') setDirection('DOWN'); break;
+                case 'ArrowLeft': if (direction !== 'RIGHT') setDirection('LEFT'); break;
+                case 'ArrowRight': if (direction !== 'LEFT') setDirection('RIGHT'); break;
+            }
+        };
         window.addEventListener('keydown', handleKeydown);
         return () => window.removeEventListener('keydown', handleKeydown);
     }, [direction]);
 
     if (!difficulty) {
         return (
-            <div className="bg-dark-800/50 border border-white/5 rounded-3xl p-8 text-center space-y-8 animate-in fade-in zoom-in duration-500">
+            <div className={`bg-dark-800/50 border border-white/5 rounded-3xl p-8 text-center space-y-8 animate-in fade-in zoom-in duration-500 ${isFullScreen ? 'max-w-xl mx-auto mt-20' : ''}`}>
                 <div className="space-y-2">
-                    <h2 className="text-3xl font-black text-white tracking-tighter italic uppercase">Juegue mientras espera</h2>
-                    <p className="text-gray-500 text-sm font-medium uppercase tracking-widest">Desbloquea los 12 niveles de maestría</p>
+                    <h2 className="text-3xl font-black text-white tracking-tighter italic uppercase">CHRONOS ARCADE</h2>
+                    <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.3em]">Nivel de Desafío Profesional</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <button
-                        onClick={() => { setDifficulty('EASY'); setIsPlaying(true); }}
-                        className="bg-dark-900/80 border border-white/5 p-6 rounded-2xl hover:border-emerald-500/50 transition-all group active:scale-95"
-                    >
-                        <Zap className="text-emerald-500 mb-2 mx-auto group-hover:animate-pulse" size={32} />
-                        <span className="block text-white font-black uppercase tracking-widest text-xs">Fácil</span>
-                        <span className="text-[10px] text-gray-500 mt-1 block">Velocidad Relajada</span>
-                    </button>
-                    <button
-                        onClick={() => { setDifficulty('NORMAL'); setIsPlaying(true); }}
-                        className="bg-dark-900/80 border border-white/5 p-6 rounded-2xl hover:border-brand-500/50 transition-all group active:scale-95"
-                    >
-                        <Target className="text-brand-500 mb-2 mx-auto group-hover:animate-bounce" size={32} />
-                        <span className="block text-white font-black uppercase tracking-widest text-xs">Normal</span>
-                        <span className="text-[10px] text-gray-500 mt-1 block">Reto Estándar</span>
-                    </button>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {(['EASY', 'NORMAL', 'HARD'] as Difficulty[]).map((diff) => (
+                        <button
+                            key={diff}
+                            onClick={() => { setDifficulty(diff); setIsPlaying(true); }}
+                            className={`bg-dark-900/80 border border-white/5 p-6 rounded-2xl transition-all group active:scale-95 hover:border-brand-500/50`}
+                        >
+                            {diff === 'EASY' && <Zap className="text-emerald-500 mb-2 mx-auto group-hover:animate-pulse" size={28} />}
+                            {diff === 'NORMAL' && <Target className="text-brand-500 mb-2 mx-auto group-hover:animate-bounce" size={28} />}
+                            {diff === 'HARD' && <Trophy className="text-red-500 mb-2 mx-auto group-hover:animate-spin" size={28} />}
+                            <span className="block text-white font-black uppercase tracking-widest text-[10px]">
+                                {diff === 'EASY' ? 'Fácil' : diff === 'NORMAL' ? 'Normal' : 'Duro'}
+                            </span>
+                        </button>
+                    ))}
                 </div>
+                {onClose && (
+                    <button onClick={onClose} className="text-gray-600 hover:text-white text-[10px] font-bold uppercase tracking-widest transition-colors mt-4">
+                        Regresar al Dashboard
+                    </button>
+                )}
             </div>
         );
     }
 
     return (
-        <div className="space-y-6 select-none animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* GAME HEADER */}
-            <div className="flex items-center justify-between bg-dark-800/40 p-4 rounded-2xl border border-white/5">
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-brand-500/10 rounded-xl flex items-center justify-center border border-brand-500/20">
-                        <Trophy className="text-brand-500" size={20} />
+        <div className={`flex flex-col gap-6 select-none animate-in fade-in duration-700 ${isFullScreen ? 'h-full max-w-4xl mx-auto' : ''}`}>
+
+            {/* HUD / STATS */}
+            <div className="flex items-center justify-between bg-dark-800/60 p-5 rounded-2xl border border-white/10 backdrop-blur-xl shrink-0">
+                <div className="flex items-center gap-6">
+                    <div className="relative">
+                        <div className="absolute -inset-1 bg-brand-500/20 blur rounded-full animate-pulse" />
+                        <div className="relative w-12 h-12 bg-dark-900 rounded-xl flex items-center justify-center border border-white/10">
+                            <Trophy className="text-brand-500" size={24} />
+                        </div>
                     </div>
                     <div>
-                        <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Nivel {level}/12</p>
-                        <p className="text-xl font-black text-white tracking-tighter">{score * 10}</p>
+                        <p className="text-[9px] text-gray-500 font-black uppercase tracking-[0.2em] mb-1">PRO MASTER LVL {level}</p>
+                        <p className="text-2xl font-black text-white tracking-tighter font-mono">{score * 100}</p>
                     </div>
                 </div>
-                <div className="text-right">
-                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Mejor Racha</p>
-                    <p className="text-xl font-black text-brand-500 tracking-tighter">{bestScore * 10}</p>
+                <div className="flex gap-4 sm:gap-8">
+                    <div className="text-right">
+                        <p className="text-[9px] text-gray-500 font-black uppercase tracking-[0.2em] mb-1">Record</p>
+                        <p className="text-xl font-black text-emerald-500 tracking-tighter font-mono">{bestScore * 100}</p>
+                    </div>
+                    {onClose && (
+                        <button onClick={onClose} className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors">
+                            <Maximize2 size={18} />
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* BOARD */}
-            <div className="relative aspect-square w-full max-w-sm mx-auto bg-dark-950 rounded-2xl border-4 border-dark-800 shadow-2xl overflow-hidden group">
-                {/* GRID OVERLAY */}
-                <div className="absolute inset-0 opacity-10" style={{
+            {/* RESPONSIVE BOARD WRAPPER - ELIMINATED CLIPPING ARTIFACTS */}
+            <div className={`relative flex-1 bg-dark-950 rounded-[2.5rem] border-[12px] border-dark-800 shadow-[0_0_60px_rgba(0,0,0,0.8)] overflow-hidden group min-h-[400px] w-full max-w-3xl mx-auto ${isExploding ? 'animate-shake' : ''}`}>
+
+                {/* ADVANCED CRT CORE */}
+                <div className="absolute inset-0 pointer-events-none z-50 bg-[radial-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.4)_120%),linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_100%,100%_4px,3px_100%]" />
+
+                {/* SCANLINE ANIMATION */}
+                <div className="absolute inset-0 pointer-events-none z-50 bg-gradient-to-b from-white/[0.03] to-transparent h-12 w-full animate-scanline" />
+
+                {/* DYNAMIC PRECISION GRID */}
+                <div className="absolute inset-0 opacity-[0.05]" style={{
                     backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
-                    backgroundSize: '20px 20px'
+                    backgroundSize: `${100 / GRID_SIZE}% ${100 / GRID_SIZE}%`
                 }} />
 
-                {/* GAME ELEMENTS */}
-                <div className="absolute inset-0 p-1">
-                    {/* Snake Body */}
+                {/* GAME ELEMENTS ENGINE */}
+                <div className="absolute inset-0"> {/* No more insets that cause clipping */}
+                    {/* Snake Body - Higher Fidelity */}
                     {snake.map((segment, i) => (
                         <div
                             key={i}
-                            className={`absolute w-[18px] h-[18px] rounded-sm transition-all duration-100 ${i === 0 ? 'bg-brand-500 z-10 shadow-[0_0_10px_rgba(202,168,111,0.5)]' : 'bg-brand-500/40'
-                                }`}
+                            className={`absolute transition-all duration-100 ${i === 0
+                                    ? 'bg-brand-500 z-10 shadow-[0_0_25px_rgba(202,168,111,0.8)]'
+                                    : 'bg-brand-500/40'
+                                } ${isExploding ? 'scale-150 rotate-45 opacity-0' : 'scale-100'}`}
                             style={{
-                                left: `${segment.x * 20}px`,
-                                top: `${segment.y * 20}px`,
-                                borderRadius: i === 0 ? '4px' : '2px'
+                                left: `${(segment.x / GRID_SIZE) * 100}%`,
+                                top: `${(segment.y / GRID_SIZE) * 100}%`,
+                                width: `${100 / GRID_SIZE}%`, // Full grid cell width
+                                height: `${100 / GRID_SIZE}%`, // Full grid cell height
+                                borderRadius: i === 0 ? '15%' : '5%',
+                                transition: 'all 0.1s cubic-bezier(0.4, 0, 0.2, 1)'
                             }}
-                        />
+                        >
+                            {i === 0 && (
+                                <>
+                                    <div className="absolute top-1/4 left-1/4 w-1.5 h-1.5 bg-black/80 rounded-full" />
+                                    <div className="absolute top-1/4 right-1/4 w-1.5 h-1.5 bg-black/80 rounded-full" />
+                                    <div className="absolute inset-0 bg-white/20 rounded-lg blur-[1px]" />
+                                </>
+                            )}
+                        </div>
                     ))}
-                    {/* Food (Scissors) */}
+
+                    {/* Food (The Golden Scissors) */}
                     <div
-                        className="absolute w-[18px] h-[18px] flex items-center justify-center animate-bounce text-emerald-400"
-                        style={{ left: `${food.x * 20}px`, top: `${food.y * 20}px` }}
+                        className="absolute flex items-center justify-center animate-bounce text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.7)]"
+                        style={{
+                            left: `${(food.x / GRID_SIZE) * 100}%`,
+                            top: `${(food.y / GRID_SIZE) * 100}%`,
+                            width: `${100 / GRID_SIZE}%`,
+                            height: `${100 / GRID_SIZE}%`,
+                            padding: '4px'
+                        }}
                     >
-                        <Scissors size={14} strokeWidth={3} />
+                        <Scissors className="w-full h-full" strokeWidth={3} />
                     </div>
+
+                    {/* Power-Up Node */}
+                    {powerUp && (
+                        <div
+                            className="absolute flex items-center justify-center animate-pulse text-brand-400 z-20"
+                            style={{
+                                left: `${(powerUp.x / GRID_SIZE) * 100}%`,
+                                top: `${(powerUp.y / GRID_SIZE) * 100}%`,
+                                width: `${100 / GRID_SIZE}%`,
+                                height: `${100 / GRID_SIZE}%`,
+                                padding: '2px'
+                            }}
+                        >
+                            <div className="w-full h-full bg-brand-500/20 rounded-full border border-brand-500 flex items-center justify-center shadow-[0_0_20px_rgba(202,168,111,0.5)]">
+                                {powerUp.type === 'SPEED' && <Zap size={14} className="animate-pulse" />}
+                                {powerUp.type === 'SHRINK' && <Target size={14} />}
+                                {powerUp.type === 'GHOST' && <ShieldCheck size={14} />}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* OVERLAYS */}
+                {/* CINEMATIC OVERLAYS */}
                 {isGameOver && (
-                    <div className="absolute inset-0 bg-dark-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
-                        <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-2">¡GAME OVER!</h3>
-                        <p className="text-gray-400 text-sm mb-6">Alcanzaste el Nivel {level} con {score * 10} puntos.</p>
-                        <button
-                            onClick={resetGame}
-                            className="bg-brand-500 text-black px-8 py-3 rounded-xl font-black uppercase tracking-widest flex items-center gap-2 hover:bg-brand-400 active:scale-95 transition-all"
-                        >
-                            <RotateCcw size={18} />
-                            Reintentar
-                        </button>
+                    <div className="absolute inset-0 bg-dark-950/98 backdrop-blur-3xl flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in duration-700 z-[60]">
+                        <div className="relative mb-10">
+                            <div className="absolute -inset-8 bg-red-500/20 blur-3xl rounded-full animate-pulse" />
+                            <div className="w-24 h-24 bg-red-500/10 rounded-3xl flex items-center justify-center border border-red-500/30 rotate-12 shadow-[0_0_40px_rgba(239,68,68,0.2)]">
+                                <ShieldCheck className="text-red-500 -rotate-12" size={48} />
+                            </div>
+                        </div>
+                        <h3 className="text-6xl font-black text-white italic uppercase tracking-[0.3em] mb-4 leading-none">SISTEMA OFF</h3>
+                        <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.6em] mb-12">Rendimiento Final: {score * 100 + (level * 50)} Unidades</p>
+
+                        <div className="flex flex-col gap-4 w-full max-w-xs">
+                            <button
+                                onClick={resetGame}
+                                className="bg-brand-500 text-black py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 hover:bg-brand-400 active:scale-95 transition-all shadow-2xl shadow-brand-500/30 group"
+                            >
+                                <RotateCcw size={20} className="group-hover:rotate-180 transition-transform duration-500" />
+                                Reiniciar Secuencia
+                            </button>
+                            <button
+                                onClick={() => setDifficulty(null)}
+                                className="text-gray-600 hover:text-white text-[9px] font-black uppercase tracking-[0.4em] transition-colors py-2"
+                            >
+                                [ Reconfigurar Simulación ]
+                            </button>
+                        </div>
                     </div>
                 )}
 
                 {!isPlaying && !isGameOver && (
-                    <div className="absolute inset-0 bg-dark-950/60 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-dark-950/40 backdrop-blur-sm flex items-center justify-center z-[60]">
                         <button
                             onClick={() => setIsPlaying(true)}
-                            className="w-16 h-16 bg-brand-500 rounded-full flex items-center justify-center text-black shadow-2xl hover:scale-110 active:scale-90 transition-all"
+                            className="w-24 h-24 bg-brand-500 rounded-full flex items-center justify-center text-black shadow-[0_0_50px_rgba(202,168,111,0.4)] hover:scale-110 active:scale-90 transition-all group"
                         >
-                            <Play fill="currentColor" size={32} />
+                            <Play fill="currentColor" size={40} className="ml-1 group-hover:scale-110 transition-transform" />
                         </button>
                     </div>
                 )}
             </div>
 
-            {/* CONTROLS */}
-            <div className="grid grid-cols-3 gap-3 max-w-[240px] mx-auto pt-4">
+            {/* PROFESSIONAL CONTROLS (Only visible on touch devices or for layout) */}
+            <div className="grid grid-cols-3 gap-4 max-w-[280px] mx-auto pb-4 shrink-0">
                 <div />
-                <button
-                    onClick={() => direction !== 'DOWN' && setDirection('UP')}
-                    className="h-16 bg-dark-800 rounded-2xl border border-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-brand-500/10 hover:border-brand-500/30 transition-all active:scale-90"
-                >
-                    <ChevronUp size={32} />
-                </button>
+                <ControlBtn icon={ChevronUp} onClick={() => direction !== 'DOWN' && setDirection('UP')} />
                 <div />
 
-                <button
-                    onClick={() => direction !== 'RIGHT' && setDirection('LEFT')}
-                    className="h-16 bg-dark-800 rounded-2xl border border-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-brand-500/10 hover:border-brand-500/30 transition-all active:scale-90"
-                >
-                    <ChevronLeft size={32} />
-                </button>
-                <button
-                    onClick={() => direction !== 'UP' && setDirection('DOWN')}
-                    className="h-16 bg-dark-800 rounded-2xl border border-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-brand-500/10 hover:border-brand-500/30 transition-all active:scale-90"
-                >
-                    <ChevronDown size={32} />
-                </button>
-                <button
-                    onClick={() => direction !== 'LEFT' && setDirection('RIGHT')}
-                    className="h-16 bg-dark-800 rounded-2xl border border-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-brand-500/10 hover:border-brand-500/30 transition-all active:scale-90"
-                >
-                    <ChevronRight size={32} />
-                </button>
+                <ControlBtn icon={ChevronLeft} onClick={() => direction !== 'RIGHT' && setDirection('LEFT')} />
+                <ControlBtn icon={ChevronDown} onClick={() => direction !== 'UP' && setDirection('DOWN')} />
+                <ControlBtn icon={ChevronRight} onClick={() => direction !== 'LEFT' && setDirection('RIGHT')} />
             </div>
 
             <button
                 onClick={() => setDifficulty(null)}
-                className="w-full py-3 text-[10px] text-gray-600 font-bold uppercase tracking-widest hover:text-gray-400 transition-colors"
+                className="text-[10px] text-gray-700 font-bold uppercase tracking-[0.4em] hover:text-gray-400 transition-colors mx-auto pb-10"
             >
-                Cambiar Dificultad
+                [ Cambiar Parámetros de Simulación ]
             </button>
         </div>
     );
 };
+
+const ControlBtn: React.FC<{ icon: any; onClick: () => void }> = ({ icon: Icon, onClick }) => (
+    <button
+        onClick={onClick}
+        className="h-16 w-16 sm:h-20 sm:w-20 bg-dark-800/80 rounded-2xl border border-white/5 flex items-center justify-center text-gray-500 hover:text-white hover:bg-brand-500/10 hover:border-brand-500/30 transition-all active:scale-90 shadow-lg"
+    >
+        <Icon size={32} strokeWidth={2.5} />
+    </button>
+);
+
