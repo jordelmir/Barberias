@@ -17,7 +17,8 @@ import { LoginPage } from './components/LoginPage';
 import { MatrixBackground } from './components/MatrixBackground'; // Visual Upgrade
 import { calculateEndTime, canClientCancel } from './services/timeEngine';
 import { CancellationAnalysis } from './components/CancellationAnalysis'; // New Component
-import { Scissors, User, LayoutDashboard, Menu, Plus, Settings, FileText, Users, ChevronDown, Bell, LogOut, Briefcase, Lock, Tag, Gauge, BarChart3, AlertCircle } from 'lucide-react';
+import { Scissors, User, LayoutDashboard, Menu, Plus, Settings, FileText, Users, ChevronDown, Bell, LogOut, Briefcase, Lock, Tag, Gauge, BarChart3, AlertCircle, Gamepad2, Zap } from 'lucide-react';
+import { SnakeGame } from './components/SnakeGame';
 import { useRealtimeAppointments } from './hooks/useRealtimeAppointments';
 export default function App() {
     const [appointments, setAppointments] = useState<Appointment[]>(() => {
@@ -651,7 +652,25 @@ export default function App() {
                         </>
                     ) : (
                         // CLIENT VIEW
-                        <div className="flex-1 flex items-center justify-center p-4 animate-in zoom-in-95 duration-500">
+                        <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-8 p-4 md:p-8 animate-in zoom-in-95 duration-500">
+                            {/* LEFT SIDE: GAME ZONE */}
+                            <div className="w-full max-w-sm shrink-0 hidden lg:block">
+                                <div className="glass-morphism rounded-2xl p-6 border border-brand-500/20 relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                        <Gamepad2 size={80} />
+                                    </div>
+                                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-4 flex items-center gap-2">
+                                        <Zap className="text-brand-500" size={20} />
+                                        Zona de Juego
+                                    </h3>
+                                    <SnakeGame />
+                                    <p className="text-[10px] text-gray-500 text-center mt-4 font-bold uppercase tracking-widest opacity-60">
+                                        Entrena tus reflejos mientras esperas
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* RIGHT SIDE: PROFILE & WIZARD */}
                             <div className="w-full max-w-md space-y-4 relative z-10">
                                 <div className="glass-morphism-inner p-4 rounded-lg flex items-start gap-3 backdrop-blur-md border border-brand-500/20">
                                     <User className="text-brand-500 mt-1" size={20} />
@@ -659,10 +678,13 @@ export default function App() {
                                         <p className="text-sm text-brand-200 font-bold">Modo Cliente Activo</p>
                                         <p className="text-xs text-gray-400 mt-1">
                                             Bienvenido, {loggedInUser.name.split(' ')[0]}.
+                                            <span className="ml-2 inline-flex items-center gap-1 text-emerald-500 animate-pulse font-bold">
+                                                <div className="w-1 h-1 bg-emerald-500 rounded-full" /> En línea
+                                            </span>
                                         </p>
                                     </div>
                                 </div>
-                                <div className="glass-morphism rounded-xl shadow-2xl">
+                                <div className="glass-morphism rounded-xl shadow-2xl bg-dark-900/40 backdrop-blur-xl">
                                     <BookingWizard
                                         barbers={barbers}
                                         services={services}
@@ -671,15 +693,23 @@ export default function App() {
                                         shopRules={shopRules}
                                         openHour={openHour}
                                         closeHour={closeHour}
-                                        timeSliceMinutes={timeSliceMinutes} // Passed down
+                                        timeSliceMinutes={timeSliceMinutes}
                                         currentUser={loggedInUser}
                                         currentRole={role}
                                         onBook={handleBook}
-                                        onCancel={() => { }} // Client can't cancel out of their own view
+                                        onCancel={() => { }}
                                         onCreateClient={handleCreateClient}
                                         onUpdateClient={handleUpdateClient}
                                         onDeleteClient={handleDeleteClient}
                                     />
+                                </div>
+
+                                {/* Mobile Game View Toggle or Hint */}
+                                <div className="lg:hidden glass-morphism-inner p-4 rounded-xl text-center border border-white/5">
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+                                        <Gamepad2 size={12} className="text-brand-500" />
+                                        Juego disponible en tu perfil
+                                    </p>
                                 </div>
                             </div>
                         </div>

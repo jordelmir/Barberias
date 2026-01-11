@@ -851,6 +851,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                                     </div>
                                 </div>
                             </div>
+                        {activeTab === 'games' && (
+                            <div className="max-w-md mx-auto py-4 animate-in fade-in zoom-in-95 duration-500">
+                                <SnakeGame />
+                            </div>
                         )}
                     </div>
                 </div>
