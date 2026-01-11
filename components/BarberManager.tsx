@@ -305,8 +305,8 @@ export const BarberManager: React.FC<BarberManagerProps> = ({ barbers, onAdd, on
                                         <div className="font-medium text-white text-sm flex items-center gap-2">
                                             {barber.name}
                                             <span className={`text-[9px] px-1.5 py-0.5 rounded border ${barber.tier === 'MASTER' ? 'bg-yellow-500/10 border-yellow-500 text-yellow-500' :
-                                                    barber.tier === 'SENIOR' ? 'bg-blue-500/10 border-blue-500 text-blue-400' :
-                                                        'bg-gray-700 border-gray-600 text-gray-400'
+                                                barber.tier === 'SENIOR' ? 'bg-blue-500/10 border-blue-500 text-blue-400' :
+                                                    'bg-gray-700 border-gray-600 text-gray-400'
                                                 }`}>
                                                 {barber.tier}
                                             </span>
@@ -315,10 +315,17 @@ export const BarberManager: React.FC<BarberManagerProps> = ({ barbers, onAdd, on
                                             <span>ID: {barber.identification}</span>
                                             {barber.phone && <span className="flex items-center gap-1 text-purple-400"><Phone size={10} /> {barber.phone}</span>}
                                             <div className="flex items-center gap-2 mt-1">
-                                                <div className="bg-dark-900 border border-dark-700 rounded px-2 py-0.5 flex items-center gap-2 group/code">
-                                                    <Key size={10} className="text-purple-500" />
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigator.clipboard.writeText(barber.accessCode || '');
+                                                    }}
+                                                    className="bg-dark-900 border border-dark-700 rounded px-2 py-0.5 flex items-center gap-2 group/code hover:border-purple-500/50 transition-colors active:scale-95 cursor-copy"
+                                                    title="Click para copiar código"
+                                                >
+                                                    <Key size={10} className="text-purple-500 group-hover/code:animate-pulse" />
                                                     <span className="text-[10px] text-gray-300 font-bold tracking-widest">{barber.accessCode}</span>
-                                                </div>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -345,6 +352,6 @@ export const BarberManager: React.FC<BarberManagerProps> = ({ barbers, onAdd, on
 
                 </div>
             </div>
-        </div>
+        </div >
     );
 };

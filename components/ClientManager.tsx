@@ -289,10 +289,17 @@ export const ClientManager: React.FC<ClientManagerProps> = ({ clients, onAdd, on
                                             <span className="flex items-center gap-1"><Fingerprint size={10} /> ID: {client.identification}</span>
                                             {client.phone && <span className="flex items-center gap-1 text-emerald-500/80"><Phone size={10} /> {client.phone}</span>}
                                             <div className="flex items-center gap-2 mt-1">
-                                                <div className="bg-dark-900 border border-dark-700 rounded px-2 py-0.5 flex items-center gap-2">
-                                                    <Key size={10} className="text-emerald-500" />
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigator.clipboard.writeText(client.accessCode || '');
+                                                    }}
+                                                    className="bg-dark-900 border border-dark-700 rounded px-2 py-0.5 flex items-center gap-2 group/code hover:border-emerald-500/50 transition-colors active:scale-95 cursor-copy"
+                                                    title="Click para copiar código"
+                                                >
+                                                    <Key size={10} className="text-emerald-500 group-hover/code:animate-pulse" />
                                                     <span className="text-[10px] text-gray-300 font-bold tracking-widest">{client.accessCode}</span>
-                                                </div>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
