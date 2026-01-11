@@ -32,9 +32,9 @@ export const ArcadePage: React.FC<{ onBack: () => void; playerName: string }> = 
             </div>
 
             {/* DEDICATED GAME AREA */}
-            <div className="w-full max-w-5xl h-full flex flex-col items-center justify-center p-4 pt-20">
-                <div className="w-full h-full glass-morphism rounded-[3rem] border border-white/5 relative overflow-hidden p-4 sm:p-12 flex flex-col">
-                    <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="w-full max-w-7xl h-full flex flex-col items-center justify-center p-4 pt-20">
+                <div className="w-full h-[85vh] glass-morphism rounded-[3rem] border border-white/5 relative overflow-hidden p-4 sm:p-8 flex flex-col">
+                    <div className="flex-1 flex flex-col items-center justify-center overflow-hidden">
                         <SnakeGame isFullScreen={true} onClose={onBack} />
                     </div>
 

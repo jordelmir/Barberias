@@ -9,11 +9,12 @@ interface Point {
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
 type Difficulty = 'EASY' | 'NORMAL' | 'HARD';
 
-const GRID_SIZE = 24; // Increased grid density for pro feel
+const GRID_WIDTH = 32;
+const GRID_HEIGHT = 18;
 const INITIAL_SPEED = {
-    EASY: 160,
-    NORMAL: 110,
-    HARD: 75
+    EASY: 150,
+    NORMAL: 100,
+    HARD: 70
 };
 
 const SAFE_MARGIN = 1;
@@ -24,7 +25,7 @@ interface PowerUp extends Point {
 }
 
 export const SnakeGame: React.FC<{ isFullScreen?: boolean; onClose?: () => void }> = ({ isFullScreen, onClose }) => {
-    const [snake, setSnake] = useState<Point[]>([{ x: 12, y: 12 }]);
+    const [snake, setSnake] = useState<Point[]>([{ x: 16, y: 9 }]);
     const [food, setFood] = useState<Point>({ x: 5, y: 5 });
     const [powerUp, setPowerUp] = useState<PowerUp | null>(null);
     const [direction, setDirection] = useState<Direction>('RIGHT');
@@ -43,8 +44,8 @@ export const SnakeGame: React.FC<{ isFullScreen?: boolean; onClose?: () => void 
         let newFood;
         while (true) {
             newFood = {
-                x: Math.floor(Math.random() * (GRID_SIZE - 2 * SAFE_MARGIN)) + SAFE_MARGIN,
-                y: Math.floor(Math.random() * (GRID_SIZE - 2 * SAFE_MARGIN)) + SAFE_MARGIN
+                x: Math.floor(Math.random() * (GRID_WIDTH - 2 * SAFE_MARGIN)) + SAFE_MARGIN,
+                y: Math.floor(Math.random() * (GRID_HEIGHT - 2 * SAFE_MARGIN)) + SAFE_MARGIN
             };
             if (!currentSnake.some(s => s.x === newFood.x && s.y === newFood.y)) break;
         }
@@ -93,8 +94,8 @@ export const SnakeGame: React.FC<{ isFullScreen?: boolean; onClose?: () => void 
 
             // PRO COLLISION ENGINE
             if (
-                newHead.x < 0 || newHead.x >= GRID_SIZE ||
-                newHead.y < 0 || newHead.y >= GRID_SIZE ||
+                newHead.x < 0 || newHead.x >= GRID_WIDTH ||
+                newHead.y < 0 || newHead.y >= GRID_HEIGHT ||
                 prevSnake.some(segment => segment.x === newHead.x && segment.y === newHead.y)
             ) {
                 setIsExploding(true);
@@ -226,9 +227,9 @@ export const SnakeGame: React.FC<{ isFullScreen?: boolean; onClose?: () => void 
                 <div className="absolute inset-0 pointer-events-none z-50 bg-gradient-to-b from-white/[0.03] to-transparent h-12 w-full animate-scanline" />
 
                 {/* DYNAMIC PRECISION GRID */}
-                <div className="absolute inset-0 opacity-[0.05]" style={{
+                <div className="absolute inset-0 opacity-[0.03]" style={{
                     backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
-                    backgroundSize: `${100 / GRID_SIZE}% ${100 / GRID_SIZE}%`
+                    backgroundSize: `${100 / GRID_WIDTH}% ${100 / GRID_HEIGHT}%`
                 }} />
 
                 {/* GAME ELEMENTS ENGINE */}
@@ -238,14 +239,14 @@ export const SnakeGame: React.FC<{ isFullScreen?: boolean; onClose?: () => void 
                         <div
                             key={i}
                             className={`absolute transition-all duration-100 ${i === 0
-                                    ? 'bg-brand-500 z-10 shadow-[0_0_25px_rgba(202,168,111,0.8)]'
-                                    : 'bg-brand-500/40'
+                                ? 'bg-brand-500 z-10 shadow-[0_0_25px_rgba(202,168,111,0.8)]'
+                                : 'bg-brand-500/40'
                                 } ${isExploding ? 'scale-150 rotate-45 opacity-0' : 'scale-100'}`}
                             style={{
-                                left: `${(segment.x / GRID_SIZE) * 100}%`,
-                                top: `${(segment.y / GRID_SIZE) * 100}%`,
-                                width: `${100 / GRID_SIZE}%`, // Full grid cell width
-                                height: `${100 / GRID_SIZE}%`, // Full grid cell height
+                                left: `${(segment.x / GRID_WIDTH) * 100}%`,
+                                top: `${(segment.y / GRID_HEIGHT) * 100}%`,
+                                width: `${100 / GRID_WIDTH}%`,
+                                height: `${100 / GRID_HEIGHT}%`,
                                 borderRadius: i === 0 ? '15%' : '5%',
                                 transition: 'all 0.1s cubic-bezier(0.4, 0, 0.2, 1)'
                             }}
@@ -262,16 +263,17 @@ export const SnakeGame: React.FC<{ isFullScreen?: boolean; onClose?: () => void 
 
                     {/* Food (The Golden Scissors) */}
                     <div
-                        className="absolute flex items-center justify-center animate-bounce text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.7)]"
+                        className="absolute flex items-center justify-center animate-bounce text-emerald-400 drop-shadow-[0_0_20px_rgba(52,211,153,0.9)] z-20"
                         style={{
-                            left: `${(food.x / GRID_SIZE) * 100}%`,
-                            top: `${(food.y / GRID_SIZE) * 100}%`,
-                            width: `${100 / GRID_SIZE}%`,
-                            height: `${100 / GRID_SIZE}%`,
-                            padding: '4px'
+                            left: `${(food.x / GRID_WIDTH) * 100}%`,
+                            top: `${(food.y / GRID_HEIGHT) * 100}%`,
+                            width: `${100 / GRID_WIDTH}%`,
+                            height: `${100 / GRID_HEIGHT}%`,
+                            padding: '2px',
+                            transform: 'scale(2.2)' // CRITICAL: Makes scissors BIG and VISIBLE
                         }}
                     >
-                        <Scissors className="w-full h-full" strokeWidth={3} />
+                        <Scissors className="w-full h-full drop-shadow-lg" strokeWidth={3} />
                     </div>
 
                     {/* Power-Up Node */}
@@ -279,11 +281,12 @@ export const SnakeGame: React.FC<{ isFullScreen?: boolean; onClose?: () => void 
                         <div
                             className="absolute flex items-center justify-center animate-pulse text-brand-400 z-20"
                             style={{
-                                left: `${(powerUp.x / GRID_SIZE) * 100}%`,
-                                top: `${(powerUp.y / GRID_SIZE) * 100}%`,
-                                width: `${100 / GRID_SIZE}%`,
-                                height: `${100 / GRID_SIZE}%`,
-                                padding: '2px'
+                                left: `${(powerUp.x / GRID_WIDTH) * 100}%`,
+                                top: `${(powerUp.y / GRID_HEIGHT) * 100}%`,
+                                width: `${100 / GRID_WIDTH}%`,
+                                height: `${100 / GRID_HEIGHT}%`,
+                                padding: '1px',
+                                transform: 'scale(1.5)'
                             }}
                         >
                             <div className="w-full h-full bg-brand-500/20 rounded-full border border-brand-500 flex items-center justify-center shadow-[0_0_20px_rgba(202,168,111,0.5)]">
