@@ -748,12 +748,10 @@ export default function App() {
                                                         <h3 className="text-2xl font-black text-white tracking-tight italic uppercase">Chronos Arcade</h3>
                                                     </div>
                                                 </div>
-                                                <button
-                                                    onClick={() => setIsArcadePageOpen(true)}
-                                                    className="px-6 py-3 bg-brand-500 text-black rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-400 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-brand-500/20"
-                                                >
-                                                    Abrir Zona Pro Arcade
-                                                </button>
+                                                <div className="flex items-center gap-2 px-4 py-2 bg-brand-500/10 rounded-full border border-brand-500/20">
+                                                    <div className="w-1.5 h-1.5 bg-brand-500 rounded-full animate-pulse" />
+                                                    <span className="text-[9px] text-brand-500 font-black uppercase tracking-widest">Interactive Teaser</span>
+                                                </div>
                                             </div>
 
                                             <div className="bg-dark-950/80 rounded-3xl border border-white/5 p-6 relative group/screen overflow-hidden">

@@ -318,11 +318,22 @@ export const SnakeGame: React.FC<{ isFullScreen?: boolean; onClose?: () => void 
                                 <RotateCcw size={20} className="group-hover:rotate-180 transition-transform duration-500" />
                                 Reiniciar Secuencia
                             </button>
+                            {difficulty !== 'EASY' && (
+                                <button
+                                    onClick={() => {
+                                        setDifficulty(difficulty === 'HARD' ? 'NORMAL' : 'EASY');
+                                        resetGame();
+                                    }}
+                                    className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 py-3 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] hover:bg-emerald-500 hover:text-white transition-all"
+                                >
+                                    Bajar Dificultad a {difficulty === 'HARD' ? 'NORMAL' : 'FÁCIL'}
+                                </button>
+                            )}
                             <button
                                 onClick={() => setDifficulty(null)}
                                 className="text-gray-600 hover:text-white text-[9px] font-black uppercase tracking-[0.4em] transition-colors py-2"
                             >
-                                [ Reconfigurar Simulación ]
+                                [ VOLVER A SELECCIÓN DE NIVEL ]
                             </button>
                         </div>
                     </div>
@@ -353,9 +364,10 @@ export const SnakeGame: React.FC<{ isFullScreen?: boolean; onClose?: () => void 
 
             <button
                 onClick={() => setDifficulty(null)}
-                className="text-[10px] text-gray-700 font-bold uppercase tracking-[0.4em] hover:text-gray-400 transition-colors mx-auto pb-10"
+                className="text-[10px] text-gray-700 font-black uppercase tracking-[0.4em] hover:text-brand-500 transition-colors mx-auto pb-10 flex items-center gap-2 group"
             >
-                [ Cambiar Parámetros de Simulación ]
+                <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                SALIR AL MENÚ DE INICIO
             </button>
         </div>
     );
