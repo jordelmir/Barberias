@@ -40,7 +40,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, error }) => {
 
 
     return (
-        <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 relative overflow-hidden font-sans">
+        <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 md:p-8 relative overflow-y-auto overflow-x-hidden font-sans">
 
             {/* PROFESSIONAL BACKGROUND SYSTEM */}
             <MatrixRain theme="GOLD" opacity={0.35} speed={0.8} />
