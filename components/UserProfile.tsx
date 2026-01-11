@@ -844,13 +844,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                                             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                                             Encriptación End-to-End
                                         </div>
-                                        <div className="flex items-center gap-2 text-[10px] text-gray-600 font-bold uppercase tracking-widest">
-                                            <div className="w-1.5 h-1.5 bg-brand-500 rounded-full animate-pulse" />
-                                            Acceso Confiable
-                                        </div>
                                     </div>
                                 </div>
                             </div>
+                        )}
                         {activeTab === 'games' && (
                             <div className="max-w-md mx-auto py-4 animate-in fade-in zoom-in-95 duration-500">
                                 <SnakeGame />
