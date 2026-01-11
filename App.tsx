@@ -884,6 +884,7 @@ export default function App() {
                     onClose={() => setIsProfileOpen(false)}
                     onUpdatePreferences={handleUpdatePreferences}
                     onUpdateProfile={handleUpdateProfile} // Added profile update handler
+                    onCancelAppointment={handleCancelAppointment}
                 />
             )}
 

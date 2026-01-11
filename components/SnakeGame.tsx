@@ -39,6 +39,7 @@ export const SnakeGame: React.FC<{ isFullScreen?: boolean; onClose?: () => void 
 
     const gameLoopRef = useRef<NodeJS.Timeout>();
     const lastRenderTime = useRef<number>(0);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     const generateFood = useCallback((currentSnake: Point[]) => {
         let newFood;
@@ -187,8 +188,46 @@ export const SnakeGame: React.FC<{ isFullScreen?: boolean; onClose?: () => void 
         );
     }
 
+    // --- TOUCH ENGINE: QUADRANT DETECTION ---
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (!difficulty || isGameOver || !containerRef.current) return;
+
+        // Prevent default browser behavior (scroll/zoom) for pure game control
+        // Note: touch-action: manipulation on body handles most of this, but preventDefault
+        // ensures the game captures the event exclusively.
+        e.preventDefault();
+
+        const rect = containerRef.current.getBoundingClientRect();
+        const touch = e.touches[0];
+
+        // Calculate coordinate relative to container center
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const diffX = x - centerX;
+        const diffY = y - centerY;
+
+        // Determine dominant axis and direction
+        if (Math.abs(diffX) > Math.abs(diffY)) {
+            // Horizontal move
+            if (diffX > 0 && direction !== 'LEFT') setDirection('RIGHT');
+            else if (diffX < 0 && direction !== 'RIGHT') setDirection('LEFT');
+        } else {
+            // Vertical move
+            if (diffY > 0 && direction !== 'UP') setDirection('DOWN');
+            else if (diffY < 0 && direction !== 'DOWN') setDirection('UP');
+        }
+    };
+
     return (
-        <div className={`flex flex-col gap-6 select-none animate-in fade-in duration-700 ${isFullScreen ? 'h-full max-w-4xl mx-auto' : ''}`}>
+        <div
+            ref={containerRef}
+            onTouchStart={handleTouchStart}
+            className={`flex flex-col gap-6 select-none animate-in fade-in duration-700 touch-none ${isFullScreen ? 'h-full max-w-4xl mx-auto' : ''}`}
+        >
 
             {/* HUD / STATS */}
             <div className="flex items-center justify-between bg-dark-800/60 p-5 rounded-2xl border border-white/10 backdrop-blur-xl shrink-0">
