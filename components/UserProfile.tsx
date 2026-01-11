@@ -5,8 +5,9 @@ import {
     X, Star, Calendar, Scissors, Award, History, Edit3, Save, MessageSquare,
     Info, Plus, Check, Hash, Smile, Zap, AlertCircle, Layout, Sparkles,
     ChevronRight, User, Trash2, Clock, AlertTriangle, PhoneCall, Fingerprint,
-    Tag, ShieldCheck, Lock, RefreshCcw, Key, CheckCircle
+    Tag, ShieldCheck, Lock, RefreshCcw, Key, CheckCircle, Gamepad2
 } from 'lucide-react';
+import { SnakeGame } from './SnakeGame';
 import { AvatarSelector } from './AvatarSelector';
 import { formatTime, canClientCancel } from '../services/timeEngine';
 
@@ -174,7 +175,7 @@ const PressHoldButton: React.FC<PressHoldButtonProps> = ({ onConfirm, label }) =
 
 
 export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, globalOptions, userRole, userAppointments, onClose, onUpdatePreferences, onUpdateProfile, onCancelAppointment }) => {
-    const [activeTab, setActiveTab] = useState<'history' | 'preferences' | 'security'>('history');
+    const [activeTab, setActiveTab] = useState<'history' | 'preferences' | 'security' | 'games'>('history');
     const [tempPin, setTempPin] = useState(client.accessCode || '');
     const [isSavingPin, setIsSavingPin] = useState(false);
     const [pinSuccess, setPinSuccess] = useState(false);
@@ -424,7 +425,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                         {[
                             { id: 'history', label: 'Mis Citas & Historial', icon: History },
                             { id: 'preferences', label: 'Mi Estilo', icon: Award },
-                            { id: 'security', label: 'Seguridad', icon: Fingerprint }
+                            { id: 'security', label: 'Seguridad', icon: Fingerprint },
+                            { id: 'games', label: 'Entretenimiento', icon: Gamepad2 }
                         ].map((tab) => (
                             <button
                                 key={tab.id}
