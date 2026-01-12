@@ -165,11 +165,16 @@ export default function App() {
             if (authData.session) {
                 // Determine User Role from Profile
                 // Note: The new script ensures admins have a linked profile in 'profiles' table
-                const { data: profile } = await supabase
+                const { data: profile, error: profileError } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', authData.user.id)
                     .single();
+
+                if (profileError) {
+                    console.error("❌ Auth SUCCESS but Profile Load FAILED:", profileError.message);
+                    console.error("This is likely an RLS Policy issue. The user cannot read their own profile row.");
+                }
 
                 if (profile) {
                     const roleName = profile.role || Role.ADMIN; // Default to Admin if auth succeeds but role missing
@@ -204,7 +209,7 @@ export default function App() {
             }
         } catch (err) {
             // Ignore error and fallthrough to legacy checks (Simulated Users)
-            console.log("Auth attempt failed, checking legacy local users...", err);
+            console.log("Auth attempt failed (or RLS blocked profile), checking legacy local users...", err);
         }
 
         // 2. Fallback: Legacy / Simulated Checks (Barbers & Clients with PINs)
