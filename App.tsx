@@ -212,10 +212,10 @@ export default function App() {
 
 
     // --- Login Handler (Secure: Supabase Auth + Identification Lookup) ---
-    const handleLogin = async (identity: string, code: string) => {
+    const handleLogin = async (identityRaw: string, codeRaw: string) => {
         setAuthError(null);
-
-        // 1. Identification (Cédula) -> Email Resolution
+        const identity = identityRaw.trim();
+        const code = codeRaw.trim();
         let loginEmail = identity;
         if (!identity.includes('@')) {
             console.log("🔍 Checking Identification map for:", identity);
@@ -239,6 +239,7 @@ export default function App() {
 
         // 2. Try Supabase Auth
         try {
+            console.log("🔑 Attempting Auth with:", { email: loginEmail, hasPassword: !!code });
             const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
                 email: loginEmail,
                 password: code,
