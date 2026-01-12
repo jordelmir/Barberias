@@ -1,86 +1,96 @@
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
-import dotenv from 'dotenv';
 
-dotenv.config({ path: '.env.local' });
+const envPath = path.resolve(process.cwd(), '.env.local');
+const envConfig = fs.readFileSync(envPath, 'utf8');
+const env: any = {};
+envConfig.split('\n').forEach(line => {
+    const match = line.match(/^([^=]+)=(.*)$/);
+    if (match) env[match[1].trim()] = match[2].trim().replace(/^["']|["']$/g, '');
+});
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
-const credentialsPath = path.resolve(process.cwd(), 'sales_credentials_v2.md');
-const credentials = fs.readFileSync(credentialsPath, 'utf8');
+async function superScrub() {
+    console.log('--- Super Scrub: Role and Name Consistency ---');
 
-async function fixEverything() {
-    console.log('--- 🚀 STARTING RIGOROUS BATCH FIX ---');
+    // 1. Fetch all profiles
+    const { data: profiles, error: pError } = await supabase.from('profiles').select('*');
+    if (pError) {
+        console.error('Error fetching profiles:', pError);
+        return;
+    }
 
-    const lines = credentials.split('\n').filter(l => l.includes('@chronos.'));
-    const targetUsers: any[] = [];
+    console.log(`Processing ${profiles.length} profiles...`);
 
-    lines.forEach(line => {
-        const parts = line.split('|').map(p => p.trim());
-        if (parts.length < 5) return;
-        const idStr = parts[1].replace(/\*\*/g, '');
-        const email = parts[3].replace(/\*\*/g, '');
-        const password = parts[4].replace(/`/g, '');
-        if (email && password) targetUsers.push({ idStr, email, password });
-    });
+    for (const p of profiles) {
+        // Condition: identification is a number 0-100 or name contains specific tags
+        const idNum = parseInt(p.identification || '');
+        const isShopAccount = (idNum >= 0 && idNum <= 100) || p.name.includes('Barber Shop') || p.name.includes('Administrador');
 
-    console.log(`Found ${targetUsers.length} target users.`);
-
-    for (const [idx, target] of targetUsers.entries()) {
-        process.stdout.write(`[${idx + 1}/${targetUsers.length}] ${target.email}: `);
-
-        try {
-            // 1. Get User
-            const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
-            const user = users.find(u => u.email === target.email);
-
-            if (!user) {
-                process.stdout.write('❌ Auth user not found\n');
-                continue;
-            }
-
-            // 2. Sync Password
-            const { error: authError } = await supabase.auth.admin.updateUserById(user.id, { password: target.password });
-            if (authError) throw new Error(`Auth sync: ${authError.message}`);
-
-            // 3. Unblock
-            const { error: profError } = await supabase.from('profiles').update({ is_blocked: false }).eq('id', user.id);
-            if (profError) throw new Error(`Profile fix: ${profError.message}`);
-
-            // 4. Identification in Barbers
-            const identification = target.idStr === 'MASTER' ? '000000000' : target.idStr;
-            const { data: bData, error: bErrorCheck } = await supabase.from('barbers').select('*').eq('profile_id', user.id).single();
-
-            if (bErrorCheck && bErrorCheck.code !== 'PGRST116') throw new Error(`Barber check: ${bErrorCheck.message}`);
-
-            if (bData) {
-                const { error: upError } = await supabase.from('barbers').update({ identification }).eq('id', bData.id);
-                if (upError) throw new Error(`Barber update (id=${identification}): ${upError.message}`);
-            } else {
-                // Fetch profile to get org_id
-                const { data: pData } = await supabase.from('profiles').select('organization_id').eq('id', user.id).single();
-                if (pData) {
-                    const { error: inError } = await supabase.from('barbers').insert({
-                        organization_id: pData.organization_id,
-                        profile_id: user.id,
-                        name: target.idStr === 'MASTER' ? 'Admin Master' : `Barbero ${target.idStr}`,
-                        email: target.email,
-                        identification,
-                        tier: 'MASTER',
-                        is_admin: true
-                    });
-                    if (inError) throw new Error(`Barber insert (id=${identification}): ${inError.message}`);
+        if (isShopAccount) {
+            // a. Determine clean name
+            let cleanName = p.name;
+            if (idNum === 0) {
+                cleanName = 'Super Admin';
+            } else if (p.name.includes('Barber Shop')) {
+                // Extract "Barber Shop XXX"
+                const match = p.name.match(/Barber Shop \d+/i);
+                if (match) cleanName = match[0];
+                else {
+                    // Fallback using identification if possible
+                    cleanName = `Barber Shop ${p.identification.padStart(3, '0')}`;
                 }
             }
 
-            process.stdout.write('✅\n');
-        } catch (err: any) {
-            process.stdout.write(`❌ ${err.message}\n`);
+            console.log(`Cleaning ID ${p.identification} | ${p.name} -> ${cleanName} (Role: ADMIN)`);
+
+            // b. Update Profile
+            const { error: upError } = await supabase
+                .from('profiles')
+                .update({
+                    role: 'ADMIN',
+                    name: cleanName
+                })
+                .eq('id', p.id);
+
+            if (upError) console.error(`Error updating profile ${p.identification}:`, upError.message);
+
+            // c. Handle Barbers table (Remove duplicates and sync)
+            const { data: barbers, error: bError } = await supabase
+                .from('barbers')
+                .select('id')
+                .eq('profile_id', p.id);
+
+            if (bError) {
+                console.error(`Error fetching barbers for ${p.id}:`, bError.message);
+                continue;
+            }
+
+            if (barbers && barbers.length > 0) {
+                // Update the first one
+                const mainBarberId = barbers[0].id;
+                await supabase
+                    .from('barbers')
+                    .update({
+                        name: cleanName,
+                        is_admin: true,
+                        identification: p.identification
+                    })
+                    .eq('id', mainBarberId);
+
+                // Delete the rest (duplicates)
+                if (barbers.length > 1) {
+                    const idsToDelete = barbers.slice(1).map(b => b.id);
+                    console.log(`Deleting ${idsToDelete.length} duplicates for ID ${p.identification}`);
+                    await supabase.from('barbers').delete().in('id', idsToDelete);
+                }
+            }
         }
     }
+
+    console.log('✅ Super Scrub Completed.');
 }
 
-fixEverything();
+superScrub();
