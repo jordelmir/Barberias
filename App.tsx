@@ -150,11 +150,66 @@ export default function App() {
     }, [appointments, role, loggedInUser.id]);
 
 
-    // --- Login Handler (Secure) ---
+    // --- Login Handler (Secure: Supabase Auth + Legacy Fallback) ---
     const handleLogin = async (identity: string, code: string) => {
         setAuthError(null);
 
-        // 1. Check Admin
+        // 1. Try Supabase Auth (Administrator / Authenticated User)
+        try {
+            // Attempt proper authentication first
+            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                email: identity,
+                password: code,
+            });
+
+            if (authData.session) {
+                // Determine User Role from Profile
+                // Note: The new script ensures admins have a linked profile in 'profiles' table
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', authData.user.id)
+                    .single();
+
+                if (profile) {
+                    const roleName = profile.role || Role.ADMIN; // Default to Admin if auth succeeds but role missing
+
+                    setLoginTransition({ profile: roleName as Role, name: profile.name || 'Administrador' });
+
+                    setTimeout(() => {
+                        setRole(roleName as Role);
+
+                        // Construct user object
+                        const adminUser: Client = {
+                            id: profile.id,
+                            name: profile.name || 'Admin',
+                            email: profile.email || identity,
+                            phone: profile.phone || '',
+                            identification: 'ADMIN',
+                            accessCode: '******',
+                            bookingHistory: [],
+                            joinDate: new Date(),
+                            points: 0,
+                            avatar: profile.avatar || '',
+                            role: Role.ADMIN // Important for permission checks
+                        };
+
+                        setAdminProfile(adminUser); // Sync admin state
+                        setLoggedInUser(adminUser);
+                        setIsAuthenticated(true);
+                        setLoginTransition(null);
+                    }, 3000);
+                    return;
+                }
+            }
+        } catch (err) {
+            // Ignore error and fallthrough to legacy checks (Simulated Users)
+            console.log("Auth attempt failed, checking legacy local users...", err);
+        }
+
+        // 2. Fallback: Legacy / Simulated Checks (Barbers & Clients with PINs)
+
+        // 2.1 Check Admin (Legacy Local State)
         if (
             (identity === adminProfile.identification || identity === adminProfile.email) &&
             code === adminProfile.accessCode
@@ -169,7 +224,7 @@ export default function App() {
             return;
         }
 
-        // 2. Check Barbers
+        // 2.2 Check Barbers
         const barberFound = barbers.find(b =>
             (b.identification === identity || b.email === identity) && b.accessCode === code
         );
@@ -201,7 +256,7 @@ export default function App() {
             return;
         }
 
-        // 3. Check Clients
+        // 2.3 Check Clients
         const clientFound = clients.find(c =>
             (c.identification === identity || c.email === identity) && c.accessCode === code
         );
