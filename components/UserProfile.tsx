@@ -20,6 +20,7 @@ interface UserProfileProps {
     onClose: () => void;
     onUpdatePreferences: (clientId: string, prefs: CutPreferences) => void;
     onUpdateProfile: (updatedData: Partial<Client>) => void;
+    onUpdateGlobalOptions?: (newOptions: GlobalStyleOptions) => void;
     onCancelAppointment: (id: string, reason?: string) => void;
 }
 
@@ -31,9 +32,10 @@ interface StyleSelectorProps {
     options: string[];
     onSelect: (val: string) => void;
     onAddCustom: (val: string) => void;
+    onRemoveOption?: (val: string) => void;
 }
 
-const StyleSelector: React.FC<StyleSelectorProps> = ({ title, icon: Icon, value, options, onSelect, onAddCustom }) => {
+const StyleSelector: React.FC<StyleSelectorProps> = ({ title, icon: Icon, value, options, onSelect, onAddCustom, onRemoveOption }) => {
     const [isAdding, setIsAdding] = useState(false);
     const [customVal, setCustomVal] = useState('');
 
@@ -64,16 +66,28 @@ const StyleSelector: React.FC<StyleSelectorProps> = ({ title, icon: Icon, value,
 
             <div className="flex-1 flex flex-wrap content-start gap-2">
                 {options.map(opt => (
-                    <button
-                        key={opt}
-                        onClick={() => onSelect(opt)}
-                        className={`px-3 py-1.5 rounded-md text-[11px] font-bold border transition-all ${value === opt
-                            ? 'bg-brand-500 text-black border-brand-500 shadow-sm scale-105'
-                            : 'bg-dark-900 text-gray-400 border-dark-700 hover:border-gray-500 hover:text-white'
-                            }`}
-                    >
-                        {opt}
-                    </button>
+                    <div key={opt} className="relative group/opt">
+                        <button
+                            onClick={() => onSelect(opt)}
+                            className={`px-3 py-1.5 rounded-md text-[11px] font-bold border transition-all ${value === opt
+                                ? 'bg-brand-500 text-black border-brand-500 shadow-sm scale-105'
+                                : 'bg-dark-900 text-gray-400 border-dark-700 hover:border-gray-500 hover:text-white'
+                                }`}
+                        >
+                            {opt}
+                        </button>
+                        {onRemoveOption && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onRemoveOption(opt);
+                                }}
+                                className="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full p-0.5 opacity-0 group-hover/opt:opacity-100 transition-opacity shadow-lg hover:bg-red-500"
+                            >
+                                <X size={10} />
+                            </button>
+                        )}
+                    </div>
                 ))}
 
                 {isAdding ? (
@@ -174,7 +188,7 @@ const PressHoldButton: React.FC<PressHoldButtonProps> = ({ onConfirm, label }) =
 };
 
 
-export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, globalOptions, userRole, userAppointments, onClose, onUpdatePreferences, onUpdateProfile, onCancelAppointment }) => {
+export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, globalOptions, userRole, userAppointments, onClose, onUpdatePreferences, onUpdateProfile, onUpdateGlobalOptions, onCancelAppointment }) => {
     const [activeTab, setActiveTab] = useState<'history' | 'preferences' | 'security' | 'games'>('history');
     const [tempPin, setTempPin] = useState(client.accessCode || '');
     const [isSavingPin, setIsSavingPin] = useState(false);
@@ -250,6 +264,25 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
     const handleSavePrefs = () => {
         onUpdatePreferences(client.id, prefs);
         onClose();
+    };
+
+    const handleRemoveOption = (categoryId: string, value: string) => {
+        console.log('Removing option:', categoryId, value, onUpdateGlobalOptions);
+        // 1. If this option is currently selected by the user, clear it locally
+        if (prefs[categoryId] === value) {
+            setPrefs(prev => ({ ...prev, [categoryId]: '' }));
+        }
+
+        // 2. If user is ADMIN and we have onUpdateGlobalOptions, update the global catalog
+        if (userRole === Role.ADMIN && onUpdateGlobalOptions) {
+            const newGlobalOptions = globalOptions.map(cat => {
+                if (cat.id === categoryId) {
+                    return { ...cat, items: cat.items.filter(i => i !== value) };
+                }
+                return cat;
+            });
+            onUpdateGlobalOptions(newGlobalOptions);
+        }
     };
 
     const handleSaveAvatar = () => {
@@ -770,6 +803,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                                                 options={optionLists[category.id] || []}
                                                 onSelect={(val) => setPrefs({ ...prefs, [category.id]: val })}
                                                 onAddCustom={(val) => handleAddOption(category.id, val)}
+                                                onRemoveOption={userRole === Role.ADMIN ? (val) => handleRemoveOption(category.id, val) : undefined}
                                             />
                                         </div>
                                     ))}

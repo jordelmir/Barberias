@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { AvatarSelector } from './AvatarSelector';
 import { Barber, Service, Appointment, Client, Role } from '../types';
 import { generateSmartGrid, formatTime, formatDate } from '../services/timeEngine';
 import { Calendar, ChevronRight, Check, User, Scissors, Clock, Sparkles, ChevronLeft, Search, Plus, Phone, Mail, History, Camera, StickyNote, Trash2, AlertTriangle, X, Info, Star, Home, RefreshCw, Fingerprint, Key, Save, Lock } from 'lucide-react';
@@ -89,13 +90,6 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
     const generateAccessCode = () => {
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         setNewClientForm(prev => ({ ...prev, accessCode: code }));
-    };
-
-    const generateRandomAvatar = () => {
-        setNewClientForm(prev => ({
-            ...prev,
-            avatar: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`
-        }));
     };
 
     const handleCreateClient = () => {
@@ -199,15 +193,31 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
                                 {step === 5 ? <Check className="text-emerald-500" /> : <Calendar className="text-brand-500" size={20} />}
                                 {step === 5 ? 'Confirmar Reserva' : 'Agendar Cita'}
                             </h2>
-                            <p className="text-xs text-gray-500 mt-1 font-medium">
-                                {isClientView ? 'Experiencia Personalizada' : 'Modo Operador'} • Paso {isClientView ? step - 1 : step} de {isClientView ? 4 : 5}
-                            </p>
-                        </div>
-                        {isClientView && (
-                            <div className="w-10 h-10 rounded-full border border-dark-600 overflow-hidden">
-                                <img src={currentUser.avatar} className="w-full h-full object-cover" alt="Me" />
+                            <div className="flex items-center gap-2 mt-1">
+                                {!isClientView && (
+                                    <span className="px-1.5 py-0.5 bg-brand-500 text-black text-[8px] font-black uppercase rounded tracking-widest animate-pulse">
+                                        Modo Operador
+                                    </span>
+                                )}
+                                <p className="text-[10px] text-gray-500 font-medium tracking-wide">
+                                    Paso {isClientView ? step - 1 : step} de {isClientView ? 4 : 5}
+                                </p>
                             </div>
-                        )}
+                        </div>
+                        <div className="flex items-center gap-4">
+                            {isClientView && (
+                                <div className="w-10 h-10 rounded-full border border-dark-600 overflow-hidden">
+                                    <img src={currentUser.avatar} className="w-full h-full object-cover" alt="Me" />
+                                </div>
+                            )}
+                            <button
+                                onClick={onCancel}
+                                className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all transform hover:rotate-90 duration-300"
+                                title="Cerrar"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -216,7 +226,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
 
                 {/* Step 1: Client Identification (ADMIN ONLY) */}
                 {!isClientView && step === 1 && (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <h3 className="text-lg font-bold text-gray-200">
                             {isCreatingClient ? 'Registrar Nuevo Cliente' : 'Identificar Cliente'}
                         </h3>
@@ -316,29 +326,25 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
                                     </div>
                                 )}
 
-                                <div className="flex gap-4">
-                                    {/* Avatar Section */}
-                                    <div className="shrink-0 flex flex-col items-center">
-                                        <div
-                                            className="w-20 h-20 rounded-full bg-dark-700 border-2 border-dark-600 overflow-hidden relative group cursor-pointer"
-                                            onClick={generateRandomAvatar}
-                                        >
-                                            {newClientForm.avatar ? (
-                                                <img src={newClientForm.avatar} alt="Avatar" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <User className="w-full h-full p-5 text-gray-500" />
-                                            )}
-                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Camera size={20} className="text-white" />
-                                            </div>
+                                <div className="space-y-4">
+                                    {/* Avatar Selection Section - Global Standard */}
+                                    <div className="bg-dark-900/80 rounded-2xl border border-white/5 overflow-hidden">
+                                        <div className="p-3 border-b border-white/5 bg-white/[0.02]">
+                                            <label className="text-[10px] font-black text-brand-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                                <Camera size={12} /> Personalización de Identidad
+                                            </label>
                                         </div>
-                                        <button type="button" onClick={generateRandomAvatar} className="text-[10px] text-brand-500 mt-2 hover:underline text-center w-full">
-                                            Generar Foto
-                                        </button>
+                                        <div className="p-1 scale-95 origin-top">
+                                            <AvatarSelector
+                                                currentAvatar={newClientForm.avatar}
+                                                name={newClientForm.name}
+                                                onAvatarChange={(url) => setNewClientForm(prev => ({ ...prev, avatar: url }))}
+                                            />
+                                        </div>
                                     </div>
 
                                     {/* Main Info */}
-                                    <div className="flex-1 space-y-3">
+                                    <div className="space-y-3">
                                         <div className="bg-dark-900/50 border border-dark-600 rounded-lg p-3 space-y-3">
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Datos Personales y Contacto</label>
 
@@ -434,7 +440,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
 
                 {/* Step 2: Service Selection */}
                 {step === 2 && (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {isClientView && (
                             <div className="mb-4">
                                 <h3 className="text-xl font-bold text-white">Hola, {currentUser.name.split(' ')[0]} 👋</h3>
@@ -477,7 +483,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
 
                 {/* Step 3: Barber Selection */}
                 {step === 3 && (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <h3 className="text-lg font-bold text-gray-200">Elige tu Especialista</h3>
                         <div className="grid grid-cols-1 gap-3">
                             {barbers.map(barber => (
@@ -513,7 +519,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
 
                 {/* Step 4: Date & Time - ENHANCED VISUALIZATION */}
                 {step === 4 && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
                         {/* Date Selector */}
                         <div className="flex items-center justify-between bg-dark-700/50 p-2 rounded-xl border border-dark-600">
