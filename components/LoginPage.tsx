@@ -21,7 +21,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, error }) => {
         setIsLoading(true);
         // Simulate network delay for realism
         setTimeout(async () => {
-            await onLogin(identity.replace(/\s/g, ''), code.replace(/\s/g, ''));
+            await onLogin(identity, code);
             setIsLoading(false);
         }, 800);
     };
@@ -128,7 +128,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, error }) => {
 
                             <button
                                 type="submit"
-                                disabled={isLoading || identity.length < 3 || code.length < 6}
+                                disabled={isLoading || identity.length < 1 || code.length < 6}
                                 className="w-full bg-brand-500 text-black font-bold py-3.5 rounded-xl hover:bg-brand-400 shadow-[0_0_20px_rgba(240,180,41,0.3)] hover:shadow-[0_0_30px_rgba(240,180,41,0.5)] transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
                             >
                                 {isLoading ? (
