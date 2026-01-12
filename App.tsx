@@ -225,9 +225,15 @@ export default function App() {
 
             if (rpcError) {
                 console.warn("⚠️ Identification lookup error:", rpcError.message);
+                setAuthError(`Error de conexión al buscar identificación: ${rpcError.message}`);
+                return;
             } else if (resolvedEmail && resolvedEmail.length > 0) {
                 loginEmail = resolvedEmail[0].email;
                 console.log("✅ Resolved email:", loginEmail);
+            } else {
+                console.warn("❌ Identification NOT FOUND for:", identity);
+                setAuthError(`No se encontró cuenta asociada a la cédula: ${identity}`);
+                return;
             }
         }
 
@@ -239,12 +245,13 @@ export default function App() {
             });
 
             if (authError) {
-                // If it's a real Auth error, skip legacy checks and show it
-                if (authError.message.includes("Invalid login credentials")) {
+                console.error("❌ Auth Error:", authError.message);
+                if (authError.message.includes("Invalid login credentials") || authError.message.includes("Email not confirmed")) {
                     setAuthError("Credenciales inválidas. Verifica tu Cédula/Email y Código.");
-                    return;
+                } else {
+                    setAuthError(`Error de acceso: ${authError.message}`);
                 }
-                throw authError; // Caught below for legacy fallback if system error
+                return;
             }
 
             if (authData.session) {
