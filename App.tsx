@@ -240,7 +240,6 @@ export default function App() {
 
         // 2. Try Supabase Auth
         try {
-            console.log("🚀 FINAL AUTH ATTEMPT -> Email:", loginEmail, "| Pwd Length:", code.length);
             const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
                 email: loginEmail,
                 password: code,

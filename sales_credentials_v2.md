@@ -1,105 +1,33 @@
-# 💰 Sales Credentials Batch (Generated 2026-01-12T01:45:57.387Z)
+# 📊 Credenciales de Venta - Barbería Chronos (Versión Final v2.1)
 
-| ID | Organization | Email | Password | Status |
-|--- |--- |--- |--- |--- |
-| MASTER | **Chronos Central** | **admin@chronos.barber** | `000000` | 👑 MANAGER |
-| 1 | Barberia Premium #001 | **admin.barber.001@chronos.app** | `Chronos.LSP9PEYF!` | ✅ Ready |
-| 2 | Barberia Premium #002 | **admin.barber.002@chronos.app** | `Chronos.HMSZ37FT!` | ✅ Ready |
-| 3 | Barberia Premium #003 | **admin.barber.003@chronos.app** | `Chronos.9JD3NHU8!` | ✅ Ready |
-| 4 | Barberia Premium #004 | **admin.barber.004@chronos.app** | `Chronos.HSLK9CHF!` | ✅ Ready |
-| 5 | Barberia Premium #005 | **admin.barber.005@chronos.app** | `Chronos.LD5WERB8!` | ✅ Ready |
-| 6 | Barberia Premium #006 | **admin.barber.006@chronos.app** | `Chronos.MR54ZO6I!` | ✅ Ready |
-| 7 | Barberia Premium #007 | **admin.barber.007@chronos.app** | `Chronos.XT377PHO!` | ✅ Ready |
-| 8 | Barberia Premium #008 | **admin.barber.008@chronos.app** | `Chronos.5NV7NNAG!` | ✅ Ready |
-| 9 | Barberia Premium #009 | **admin.barber.009@chronos.app** | `Chronos.8L8YNVXX!` | ✅ Ready |
-| 10 | Barberia Premium #010 | **admin.barber.010@chronos.app** | `Chronos.A3H38JNC!` | ✅ Ready |
-| 11 | Barberia Premium #011 | **admin.barber.011@chronos.app** | `Chronos.XVH8UA1S!` | ✅ Ready |
-| 12 | Barberia Premium #012 | **admin.barber.012@chronos.app** | `Chronos.005W80L5!` | ✅ Ready |
-| 13 | Barberia Premium #013 | **admin.barber.013@chronos.app** | `Chronos.DZ2B0M2K!` | ✅ Ready |
-| 14 | Barberia Premium #014 | **admin.barber.014@chronos.app** | `Chronos.GLIAOUCN!` | ✅ Ready |
-| 15 | Barberia Premium #015 | **admin.barber.015@chronos.app** | `Chronos.US6ISO9N!` | ✅ Ready |
-| 16 | Barberia Premium #016 | **admin.barber.016@chronos.app** | `Chronos.OZL19AOI!` | ✅ Ready |
-| 17 | Barberia Premium #017 | **admin.barber.017@chronos.app** | `Chronos.8WOGUG6O!` | ✅ Ready |
-| 18 | Barberia Premium #018 | **admin.barber.018@chronos.app** | `Chronos.W26EGUVC!` | ✅ Ready |
-| 19 | Barberia Premium #019 | **admin.barber.019@chronos.app** | `Chronos.KGCFRDKL!` | ✅ Ready |
-| 20 | Barberia Premium #020 | **admin.barber.020@chronos.app** | `Chronos.F9K23GJ9!` | ✅ Ready |
-| 21 | Barberia Premium #021 | **admin.barber.021@chronos.app** | `Chronos.I9FAJ6DG!` | ✅ Ready |
-| 22 | Barberia Premium #022 | **admin.barber.022@chronos.app** | `Chronos.0L4J1VDX!` | ✅ Ready |
-| 23 | Barberia Premium #023 | **admin.barber.023@chronos.app** | `Chronos.PMF0WXAR!` | ✅ Ready |
-| 24 | Barberia Premium #024 | **admin.barber.024@chronos.app** | `Chronos.TTQNS1MK!` | ✅ Ready |
-| 25 | Barberia Premium #025 | **admin.barber.025@chronos.app** | `Chronos.FGQFL7T5!` | ✅ Ready |
-| 26 | Barberia Premium #026 | **admin.barber.026@chronos.app** | `Chronos.1YNDLBT4!` | ✅ Ready |
-| 27 | Barberia Premium #027 | **admin.barber.027@chronos.app** | `Chronos.O14N38FK!` | ✅ Ready |
-| 28 | Barberia Premium #028 | **admin.barber.028@chronos.app** | `Chronos.1LWS4A9A!` | ✅ Ready |
-| 29 | Barberia Premium #029 | **admin.barber.029@chronos.app** | `Chronos.M4ILFH7C!` | ✅ Ready |
-| 30 | Barberia Premium #030 | **admin.barber.030@chronos.app** | `Chronos.4UB3G9J6!` | ✅ Ready |
-| 31 | Barberia Premium #031 | **admin.barber.031@chronos.app** | `Chronos.24IRAMQ5!` | ✅ Ready |
-| 32 | Barberia Premium #032 | **admin.barber.032@chronos.app** | `Chronos.PPFJACTA!` | ✅ Ready |
-| 33 | Barberia Premium #033 | **admin.barber.033@chronos.app** | `Chronos.9BNHA1QQ!` | ✅ Ready |
-| 34 | Barberia Premium #034 | **admin.barber.034@chronos.app** | `Chronos.D3A7OR8H!` | ✅ Ready |
-| 35 | Barberia Premium #035 | **admin.barber.035@chronos.app** | `Chronos.QZO43C0M!` | ✅ Ready |
-| 36 | Barberia Premium #036 | **admin.barber.036@chronos.app** | `Chronos.X1LXJKIB!` | ✅ Ready |
-| 37 | Barberia Premium #037 | **admin.barber.037@chronos.app** | `Chronos.7UTF94W2!` | ✅ Ready |
-| 38 | Barberia Premium #038 | **admin.barber.038@chronos.app** | `Chronos.48HBZ0CG!` | ✅ Ready |
-| 39 | Barberia Premium #039 | **admin.barber.039@chronos.app** | `Chronos.S9I5MUKO!` | ✅ Ready |
-| 40 | Barberia Premium #040 | **admin.barber.040@chronos.app** | `Chronos.71FPDF25!` | ✅ Ready |
-| 41 | Barberia Premium #041 | **admin.barber.041@chronos.app** | `Chronos.P99RCTWD!` | ✅ Ready |
-| 42 | Barberia Premium #042 | **admin.barber.042@chronos.app** | `Chronos.HYV9VETE!` | ✅ Ready |
-| 43 | Barberia Premium #043 | **admin.barber.043@chronos.app** | `Chronos.L78Y5N2W!` | ✅ Ready |
-| 44 | Barberia Premium #044 | **admin.barber.044@chronos.app** | `Chronos.5FHE0W26!` | ✅ Ready |
-| 45 | Barberia Premium #045 | **admin.barber.045@chronos.app** | `Chronos.LDQJ7MFI!` | ✅ Ready |
-| 46 | Barberia Premium #046 | **admin.barber.046@chronos.app** | `Chronos.6DG5N4R9!` | ✅ Ready |
-| 47 | Barberia Premium #047 | **admin.barber.047@chronos.app** | `Chronos.2I5EP1XF!` | ✅ Ready |
-| 48 | Barberia Premium #048 | **admin.barber.048@chronos.app** | `Chronos.PJKQA5WE!` | ✅ Ready |
-| 49 | Barberia Premium #049 | **admin.barber.049@chronos.app** | `Chronos.DSGSB834!` | ✅ Ready |
-| 50 | Barberia Premium #050 | **admin.barber.050@chronos.app** | `Chronos.EIDNUT3I!` | ✅ Ready |
-| 51 | Barberia Premium #051 | **admin.barber.051@chronos.app** | `Chronos.90ABKRNS!` | ✅ Ready |
-| 52 | Barberia Premium #052 | **admin.barber.052@chronos.app** | `Chronos.4D63JZNE!` | ✅ Ready |
-| 53 | Barberia Premium #053 | **admin.barber.053@chronos.app** | `Chronos.NNHWRXK5!` | ✅ Ready |
-| 54 | Barberia Premium #054 | **admin.barber.054@chronos.app** | `Chronos.BAHA91XN!` | ✅ Ready |
-| 55 | Barberia Premium #055 | **admin.barber.055@chronos.app** | `Chronos.0IDOKG4B!` | ✅ Ready |
-| 56 | Barberia Premium #056 | **admin.barber.056@chronos.app** | `Chronos.5VEI8JBU!` | ✅ Ready |
-| 57 | Barberia Premium #057 | **admin.barber.057@chronos.app** | `Chronos.XZSCH9RG!` | ✅ Ready |
-| 58 | Barberia Premium #058 | **admin.barber.058@chronos.app** | `Chronos.YSSC6GQN!` | ✅ Ready |
-| 59 | Barberia Premium #059 | **admin.barber.059@chronos.app** | `Chronos.G8SRJOXB!` | ✅ Ready |
-| 60 | Barberia Premium #060 | **admin.barber.060@chronos.app** | `Chronos.OVPJBV8P!` | ✅ Ready |
-| 61 | Barberia Premium #061 | **admin.barber.061@chronos.app** | `Chronos.B90FYK5S!` | ✅ Ready |
-| 62 | Barberia Premium #062 | **admin.barber.062@chronos.app** | `Chronos.8XPOYALY!` | ✅ Ready |
-| 63 | Barberia Premium #063 | **admin.barber.063@chronos.app** | `Chronos.FHNOUVAM!` | ✅ Ready |
-| 64 | Barberia Premium #064 | **admin.barber.064@chronos.app** | `Chronos.RH21QSZQ!` | ✅ Ready |
-| 65 | Barberia Premium #065 | **admin.barber.065@chronos.app** | `Chronos.OXXZYIAZ!` | ✅ Ready |
-| 66 | Barberia Premium #066 | **admin.barber.066@chronos.app** | `Chronos.3VH9TQ3L!` | ✅ Ready |
-| 67 | Barberia Premium #067 | **admin.barber.067@chronos.app** | `Chronos.NSQ4272H!` | ✅ Ready |
-| 68 | Barberia Premium #068 | **admin.barber.068@chronos.app** | `Chronos.9J1S2G3Q!` | ✅ Ready |
-| 69 | Barberia Premium #069 | **admin.barber.069@chronos.app** | `Chronos.N3JS5ZCU!` | ✅ Ready |
-| 70 | Barberia Premium #070 | **admin.barber.070@chronos.app** | `Chronos.BR6M1J3U!` | ✅ Ready |
-| 71 | Barberia Premium #071 | **admin.barber.071@chronos.app** | `Chronos.89UMY9NN!` | ✅ Ready |
-| 72 | Barberia Premium #072 | **admin.barber.072@chronos.app** | `Chronos.HS323VOU!` | ✅ Ready |
-| 73 | Barberia Premium #073 | **admin.barber.073@chronos.app** | `Chronos.1G4PBIQQ!` | ✅ Ready |
-| 74 | Barberia Premium #074 | **admin.barber.074@chronos.app** | `Chronos.BG80A95Z!` | ✅ Ready |
-| 75 | Barberia Premium #075 | **admin.barber.075@chronos.app** | `Chronos.MEAMFC2M!` | ✅ Ready |
-| 76 | Barberia Premium #076 | **admin.barber.076@chronos.app** | `Chronos.AGEOX7FO!` | ✅ Ready |
-| 77 | Barberia Premium #077 | **admin.barber.077@chronos.app** | `Chronos.O20673R6!` | ✅ Ready |
-| 78 | Barberia Premium #078 | **admin.barber.078@chronos.app** | `Chronos.R3122QX8!` | ✅ Ready |
-| 79 | Barberia Premium #079 | **admin.barber.079@chronos.app** | `Chronos.ASRPV23E!` | ✅ Ready |
-| 80 | Barberia Premium #080 | **admin.barber.080@chronos.app** | `Chronos.E47VNJVK!` | ✅ Ready |
-| 81 | Barberia Premium #081 | **admin.barber.081@chronos.app** | `Chronos.RC6HG0UV!` | ✅ Ready |
-| 82 | Barberia Premium #082 | **admin.barber.082@chronos.app** | `Chronos.6IKX3N9Z!` | ✅ Ready |
-| 83 | Barberia Premium #083 | **admin.barber.083@chronos.app** | `Chronos.5T90ELQQ!` | ✅ Ready |
-| 84 | Barberia Premium #084 | **admin.barber.084@chronos.app** | `Chronos.ZI8OMFOT!` | ✅ Ready |
-| 85 | Barberia Premium #085 | **admin.barber.085@chronos.app** | `Chronos.URQ9H993!` | ✅ Ready |
-| 86 | Barberia Premium #086 | **admin.barber.086@chronos.app** | `Chronos.YLQ51KLJ!` | ✅ Ready |
-| 87 | Barberia Premium #087 | **admin.barber.087@chronos.app** | `Chronos.4Y0E1K9K!` | ✅ Ready |
-| 88 | Barberia Premium #088 | **admin.barber.088@chronos.app** | `Chronos.67PENNBN!` | ✅ Ready |
-| 89 | Barberia Premium #089 | **admin.barber.089@chronos.app** | `Chronos.OF2QP4AO!` | ✅ Ready |
-| 90 | Barberia Premium #090 | **admin.barber.090@chronos.app** | `Chronos.X8A3SJ9S!` | ✅ Ready |
-| 91 | Barberia Premium #091 | **admin.barber.091@chronos.app** | `Chronos.A265IKQJ!` | ✅ Ready |
-| 92 | Barberia Premium #092 | **admin.barber.092@chronos.app** | `Chronos.AJ8VWXVN!` | ✅ Ready |
-| 93 | Barberia Premium #093 | **admin.barber.093@chronos.app** | `Chronos.0O0FOM1S!` | ✅ Ready |
-| 94 | Barberia Premium #094 | **admin.barber.094@chronos.app** | `Chronos.YY1JG4BM!` | ✅ Ready |
-| 95 | Barberia Premium #095 | **admin.barber.095@chronos.app** | `Chronos.0E5Z5ZPF!` | ✅ Ready |
-| 96 | Barberia Premium #096 | **admin.barber.096@chronos.app** | `Chronos.4O50ZTW2!` | ✅ Ready |
-| 97 | Barberia Premium #097 | **admin.barber.097@chronos.app** | `Chronos.VRPJE25M!` | ✅ Ready |
-| 98 | Barberia Premium #098 | **admin.barber.098@chronos.app** | `Chronos.GXLIM9SG!` | ✅ Ready |
-| 99 | Barberia Premium #099 | **admin.barber.099@chronos.app** | `Chronos.GZ89WP0E!` | ✅ Ready |
-| 100 | Barberia Premium #100 | **admin.barber.100@chronos.app** | `Chronos.XL0LW6HO!` | ✅ Ready |
+Este documento contiene las credenciales de acceso para los 100 usuarios de prueba y el administrador maestro.
+
+---
+
+### 🔑 Administrador Maestro (Control Total)
+- **ID (Cédula):** `000000000`
+- **Email:** `admin@chronos.barber`
+- **Password:** `000000`
+- **Dashboard:** Acceso a métricas globales y gestión de todas las barberías.
+
+---
+
+### 💈 Usuarios de Barbería (Lote de 100)
+
+| ID | Organización | Email | Password |
+|----|--------------|-------|----------|
+| 1 | Barber Shop 001 | admin.barber.001@chronos.app | `Chronos.2026!001` |
+| 2 | Barber Shop 002 | admin.barber.002@chronos.app | `Chronos.2026!002` |
+| 3 | Barber Shop 003 | admin.barber.003@chronos.app | `Chronos.2026!003` |
+| 4 | Barber Shop 004 | admin.barber.004@chronos.app | `Chronos.2026!004` |
+| 5 | Barber Shop 005 | admin.barber.005@chronos.app | `Chronos.2026!005` |
+| 6 | Barber Shop 006 | admin.barber.006@chronos.app | `Chronos.2026!006` |
+| 7 | Barber Shop 007 | admin.barber.007@chronos.app | `Chronos.2026!007` |
+| 8 | Barber Shop 008 | admin.barber.008@chronos.app | `Chronos.2026!008` |
+| 9 | Barber Shop 009 | admin.barber.009@chronos.app | `Chronos.2026!009` |
+| 10 | Barber Shop 010 | admin.barber.010@chronos.app | `Chronos.2026!010` |
+| ... | ... | ... | ... |
+| 100 | Barber Shop 100 | admin.barber.100@chronos.app | `Chronos.2026!100` |
+
+> [!NOTE]
+> Todos los usuarios del lote siguen el patrón: `Chronos.2026!` seguido de su ID de tres dígitos.
