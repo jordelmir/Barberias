@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { INITIAL_APPOINTMENTS, BARBERS as INITIAL_BARBERS, SERVICES as DEFAULT_SERVICES, DEFAULT_OPEN_HOUR, DEFAULT_CLOSE_HOUR, INITIAL_CLIENTS, MOCK_ADMIN_USER, DEFAULT_STYLE_OPTIONS } from './constants';
+import { DEFAULT_OPEN_HOUR, DEFAULT_CLOSE_HOUR, DEFAULT_STYLE_OPTIONS } from './constants';
 import { Appointment, Role, AppointmentStatus, Metrics, Client, BookingHistoryItem, Service, CutPreferences, Barber, GlobalStyleOptions } from './types';
 import { Timeline } from './components/Timeline';
 import { MetricsPanel } from './components/MetricsPanel';
@@ -36,12 +36,12 @@ export default function App() {
                 cancellationDate: a.cancellationDate ? new Date(a.cancellationDate) : undefined
             }));
         }
-        return INITIAL_APPOINTMENTS;
+        return [];
     });
 
     const [services, setServices] = useState<Service[]>(() => {
         const saved = localStorage.getItem('barberia_services');
-        return saved ? JSON.parse(saved) : DEFAULT_SERVICES;
+        return saved ? JSON.parse(saved) : [];
     });
 
     // Persistence Layer (LocalStorage)
@@ -51,7 +51,20 @@ export default function App() {
             const parsed = JSON.parse(saved);
             return { ...parsed, joinDate: new Date(parsed.joinDate) };
         }
-        return MOCK_ADMIN_USER;
+        // Return a null-like or empty admin state initially, forcing login
+        return {
+            id: '',
+            name: '',
+            email: '',
+            phone: '',
+            identification: '',
+            accessCode: '',
+            bookingHistory: [],
+            joinDate: new Date(),
+            points: 0,
+            avatar: '',
+            role: Role.ADMIN
+        };
     });
 
     const [clients, setClients] = useState<Client[]>(() => {
@@ -60,12 +73,12 @@ export default function App() {
             const parsed = JSON.parse(saved);
             return parsed.map((c: any) => ({ ...c, joinDate: new Date(c.joinDate) }));
         }
-        return INITIAL_CLIENTS;
+        return [];
     });
 
     const [barbers, setBarbers] = useState<Barber[]>(() => {
         const saved = localStorage.getItem('barberia_barbers');
-        return saved ? JSON.parse(saved) : INITIAL_BARBERS;
+        return saved ? JSON.parse(saved) : [];
     });
 
     // Save triggers

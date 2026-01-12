@@ -46,10 +46,62 @@ async function main() {
     credentialsContent += `|--- |--- |--- |--- |--- |\n`;
 
     try {
+        // --- 0. PROVISION GERENTE GENERAL (MASTER ADMIN) ---
+        console.log(`👑 Provisioning GERENTE GENERAL...`);
+        const managerEmail = 'admin@chronos.barber';
+        const managerPassword = '000000'; // As requested
+        const managerId = '000000000'; // Used as identification
+
+        // Check if exists or create
+        // Simplification: We attempt create, if fails we log.
+        // For accurate User ID we might need to search but admin.createUser returns it if new.
+
+        const { data: managerOrg } = await supabase.from('organizations').insert({ name: 'Chronos Barberia (Sede Central)' }).select().single();
+
+        if (managerOrg) {
+            const { data: managerAuth, error: managerAuthErr } = await supabase.auth.admin.createUser({
+                email: managerEmail,
+                password: managerPassword,
+                email_confirm: true,
+                user_metadata: { name: 'Gerente General' }
+            });
+
+            if (managerAuth && managerAuth.user) {
+                await supabase.from('profiles').insert({
+                    id: managerAuth.user.id,
+                    organization_id: managerOrg.id,
+                    email: managerEmail,
+                    role: 'ADMIN',
+                    name: 'Gerente General',
+                    created_at: new Date().toISOString()
+                });
+
+                // Barber entry for dashboard access
+                await supabase.from('barbers').insert({
+                    organization_id: managerOrg.id,
+                    profile_id: managerAuth.user.id,
+                    name: 'Gerente General',
+                    email: managerEmail,
+                    identification: managerId, // 000000000
+                    access_code: '000000',     // 000000 (Legacy Login Support)
+                    tier: 'MASTER',
+                    is_admin: true
+                });
+
+                credentialsContent += `| MASTER | **Chronos Central** | **${managerEmail}** | \`${managerPassword}\` | 👑 MANAGER |\n`;
+            } else {
+                console.log("   ⚠️ Manager auth creation failed (maybe exists):", managerAuthErr?.message);
+            }
+        }
+
+
+        // --- SALES BATCH ---
         for (let i = 1; i <= BATCH_SIZE; i++) {
             const orgName = `Barberia Premium #${i.toString().padStart(3, '0')}`;
             const email = `admin.barber.${i.toString().padStart(3, '0')}@chronos.app`;
             const password = `Chronos.${Math.random().toString(36).slice(-8).toUpperCase()}!`;
+            // ... (rest of loop code)
+            const idCode = i.toString().padStart(3, '0') + "000000"; // Fake ID for reference
 
             console.log(`[${i}/${BATCH_SIZE}] Provisioning ${orgName}...`);
 
