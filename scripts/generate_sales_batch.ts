@@ -46,6 +46,16 @@ async function main() {
     credentialsContent += `|--- |--- |--- |--- |--- |\n`;
 
     try {
+        // --- PRE-FETCH ALL USERS (Optimization) ---
+        console.log("🔍 Pre-fetching existing users for collision handling...");
+        // Fetch up to 1000 users (enough for our batch)
+        const { data: { users: allUsers }, error: listError } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+
+        if (listError) console.error("   ⚠️ Failed to list users:", listError.message);
+
+        const userMap = new Map((allUsers || []).map(u => [u.email?.toLowerCase(), u.id]));
+        console.log(`   ✅ Found ${userMap.size} existing users in Supabase Auth.`);
+
         // --- 0. PROVISION GERENTE GENERAL (MASTER ADMIN) ---
         console.log(`👑 Provisioning GERENTE GENERAL...`);
         const managerEmail = 'admin@chronos.barber';
@@ -118,7 +128,9 @@ async function main() {
                 continue;
             }
 
-            // 2. Create Auth User
+            // 2. Create or Get Auth User
+            let userId: string | null = null;
+
             const { data: authData, error: authError } = await supabase.auth.admin.createUser({
                 email,
                 password,
@@ -127,19 +139,35 @@ async function main() {
             });
 
             if (authError) {
-                console.error(`   ❌ Failed to create Auth User ${i}:`, authError.message);
-                // Rollback Org? (In a real script yes, here we skip)
-                continue;
+                // If error is "User already registered", fetch the user
+                if (authError.message.includes("already registered") || authError.status === 400 || authError.status === 422) {
+                    console.log(`   🔸 User ${email} exists, fetching ID...`);
+                    const { data: existingUser } = await supabase.auth.admin.listUsers();
+                    const found = existingUser.users.find(u => u.email === email);
+                    if (found) {
+                        userId = found.id;
+                        // Optional: Update password here if we wanted to enforce it
+                        await supabase.auth.admin.updateUserById(userId, { password: password });
+                    } else {
+                        console.error(`   ❌ Failed to find existing user ${email}`);
+                        continue;
+                    }
+                } else {
+                    console.error(`   ❌ Failed to create Auth User ${i}:`, authError.message);
+                    continue;
+                }
+            } else {
+                userId = authData.user.id;
             }
 
-            const userId = authData.user.id;
+            if (!userId) continue;
 
-            // 3. Create Admin Profile
+            // 3. Create Admin Profile (Upsert to be safe)
             const { error: profileError } = await supabase
                 .from('profiles')
-                .insert({
+                .upsert({
                     id: userId,
-                    organization_id: orgData.id, // THE CRITICAL LINK
+                    organization_id: orgData.id,
                     email,
                     role: 'ADMIN',
                     name: 'Administrador Principal',
