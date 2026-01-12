@@ -136,6 +136,52 @@ export default function App() {
     // ADMIN SPECIFIC STATE: View Mode (Dashboard vs Workstation)
     const [adminViewMode, setAdminViewMode] = useState<'DASHBOARD' | 'WORKSTATION'>('DASHBOARD');
 
+    // --- DATA HYDRATION (Supabase -> State) ---
+    useEffect(() => {
+        const loadInitialData = async () => {
+            if (!organizationId) return;
+
+            console.log('📦 Hydrating state for Organization:', organizationId);
+
+            // 1. Fetch Barbers
+            const { data: barberData } = await supabase
+                .from('barbers')
+                .select('*')
+                .eq('organization_id', organizationId);
+            if (barberData) setBarbers(barberData as Barber[]);
+
+            // 2. Fetch Services
+            const { data: serviceData } = await supabase
+                .from('services')
+                .select('*')
+                .eq('organization_id', organizationId);
+            if (serviceData) setServices(serviceData as Service[]);
+
+            // 3. Fetch Clients
+            const { data: clientData } = await supabase
+                .from('clients')
+                .select('*')
+                .eq('organization_id', organizationId);
+            if (clientData) setClients(clientData as Client[]);
+
+            // 4. Fetch Appointments (Initial load)
+            const { data: appointmentData } = await supabase
+                .from('appointments')
+                .select('*')
+                .eq('organization_id', organizationId);
+
+            if (appointmentData) {
+                setAppointments(appointmentData.map(a => ({
+                    ...a,
+                    startTime: new Date(a.start_time),
+                    expectedEndTime: new Date(a.expected_end_time)
+                })));
+            }
+        };
+
+        loadInitialData();
+    }, [organizationId]);
+
     // --- Cinematic State ---
     const [loginTransition, setLoginTransition] = useState<{ profile: Role, name: string } | null>(null);
     const [isTVTurningOff, setIsTVTurningOff] = useState(false);
@@ -163,21 +209,44 @@ export default function App() {
     }, [appointments, role, loggedInUser.id]);
 
 
-    // --- Login Handler (Secure: Supabase Auth + Legacy Fallback) ---
+    // --- Login Handler (Secure: Supabase Auth + Identification Lookup) ---
     const handleLogin = async (identity: string, code: string) => {
         setAuthError(null);
 
-        // 1. Try Supabase Auth (Administrator / Authenticated User)
+        // 1. Identification (Cédula) -> Email Resolution
+        let loginEmail = identity;
+        if (!identity.includes('@')) {
+            console.log("🔍 Checking Identification map for:", identity);
+            const { data: resolvedEmail, error: rpcError } = await supabase.rpc('get_email_by_identification', {
+                target_id: identity
+            });
+
+            if (rpcError) {
+                console.warn("⚠️ Identification lookup error:", rpcError.message);
+            } else if (resolvedEmail && resolvedEmail.length > 0) {
+                loginEmail = resolvedEmail[0].email;
+                console.log("✅ Resolved email:", loginEmail);
+            }
+        }
+
+        // 2. Try Supabase Auth
         try {
-            // Attempt proper authentication first
             const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-                email: identity,
+                email: loginEmail,
                 password: code,
             });
 
+            if (authError) {
+                // If it's a real Auth error, skip legacy checks and show it
+                if (authError.message.includes("Invalid login credentials")) {
+                    setAuthError("Credenciales inválidas. Verifica tu Cédula/Email y Código.");
+                    return;
+                }
+                throw authError; // Caught below for legacy fallback if system error
+            }
+
             if (authData.session) {
                 // Determine User Role from Profile
-                // Note: The new script ensures admins have a linked profile in 'profiles' table
                 const { data: profile, error: profileError } = await supabase
                     .from('profiles')
                     .select('*')
@@ -186,43 +255,44 @@ export default function App() {
 
                 if (profileError) {
                     console.error("❌ Auth SUCCESS but Profile Load FAILED:", profileError.message);
-                    console.error("This is likely an RLS Policy issue. The user cannot read their own profile row.");
+                    setAuthError("Error al cargar perfil. Contacte soporte.");
+                    return;
                 }
 
                 if (profile) {
-                    const roleName = profile.role || Role.ADMIN; // Default to Admin if auth succeeds but role missing
+                    const roleName = profile.role || Role.ADMIN;
+                    setOrganizationId(profile.organization_id); // TRIGGER HYDRATION
 
-                    setLoginTransition({ profile: roleName as Role, name: profile.name || 'Administrador' });
+                    setLoginTransition({ profile: roleName as Role, name: profile.name || 'Usuario' });
 
                     setTimeout(() => {
                         setRole(roleName as Role);
 
                         // Construct user object
-                        const adminUser: Client = {
+                        const user: Client = {
                             id: profile.id,
-                            name: profile.name || 'Admin',
-                            email: profile.email || identity,
+                            name: profile.name || 'Usuario',
+                            email: profile.email || loginEmail,
                             phone: profile.phone || '',
-                            identification: 'ADMIN',
+                            identification: identity, // Use original ID if possible
                             accessCode: '******',
                             bookingHistory: [],
                             joinDate: new Date(),
                             points: 0,
-                            avatar: profile.avatar || '',
-                            role: Role.ADMIN // Important for permission checks
+                            avatar: profile.avatar_url || '',
+                            role: roleName as Role
                         };
 
-                        setAdminProfile(adminUser); // Sync admin state
-                        setLoggedInUser(adminUser);
+                        setAdminProfile(user);
+                        setLoggedInUser(user);
                         setIsAuthenticated(true);
                         setLoginTransition(null);
                     }, 3000);
                     return;
                 }
             }
-        } catch (err) {
-            // Ignore error and fallthrough to legacy checks (Simulated Users)
-            console.log("Auth attempt failed (or RLS blocked profile), checking legacy local users...", err);
+        } catch (err: any) {
+            console.log("Auth attempt failed, checking legacy local users...", err.message);
         }
 
         // 2. Fallback: Legacy / Simulated Checks (Barbers & Clients with PINs)

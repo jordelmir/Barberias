@@ -33,12 +33,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, error }) => {
 
     const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         // ALLOW ALL CHARACTERS (Hybrid Mode: PIN or Admin Password)
-        // We trim spaces but allow letters/symbols for Admin passwords
         const val = e.target.value;
         setCode(val);
     };
 
-    const isPasswordMode = code.length > 6 || /[^0-9]/.test(code);
+    // If it's the master ID or contains letters/symbols or is long -> Password Mode
+    const isPasswordMode = identity === '000000000' || code.length > 6 || /[^0-9]/.test(code);
 
     return (
         <div className="fixed inset-0 bg-[#050505] font-sans overflow-hidden">
