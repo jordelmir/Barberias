@@ -545,7 +545,22 @@ export default function App() {
     };
 
 
-    const handleUpdatePreferences = (clientId: string, prefs: CutPreferences) => setClients(prev => prev.map(c => c.id === clientId ? { ...c, preferences: prefs } : c));
+    const handleUpdatePreferences = async (clientId: string, prefs: CutPreferences) => {
+        // 1. Update local state
+        setClients(prev => prev.map(c => c.id === clientId ? { ...c, preferences: prefs } : c));
+
+        // 2. Persist to Supabase
+        const { error } = await supabase
+            .from('clients')
+            .update({ preferences: prefs })
+            .eq('id', clientId);
+
+        if (error) {
+            console.error('❌ Error updating preferences in Supabase:', error.message);
+        } else {
+            console.log('✅ Preferences persisted for client:', clientId);
+        }
+    };
     const handleAddService = (serviceData: Omit<Service, 'id'>) => setServices(prev => [...prev, { id: `s-${Math.random()}`, ...serviceData }]);
     const handleUpdateService = (updatedService: Service) => setServices(prev => prev.map(s => s.id === updatedService.id ? updatedService : s));
     const handleDeleteService = (serviceId: string) => setServices(prev => prev.filter(s => s.id !== serviceId));

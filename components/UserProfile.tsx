@@ -752,7 +752,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                                                 value={prefs.remarks}
                                                 onChange={(e) => setPrefs({ ...prefs, remarks: e.target.value })}
                                             />
-                                            <p className="text-[10px] text-gray-500 mt-2 text-right">Visible para el barbero en la cita.</p>
+                                            <p className="text-[10px] text-gray-500 mt-2 text-right">Visible para ti y para el barbero en la cita.</p>
                                         </div>
                                     </div>
 
