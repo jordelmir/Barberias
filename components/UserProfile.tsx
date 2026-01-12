@@ -180,6 +180,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
     const [isSavingPin, setIsSavingPin] = useState(false);
     const [pinSuccess, setPinSuccess] = useState(false);
 
+    // Password Editing State
+    const [newPassword, setNewPassword] = useState('');
+    const [isSavingPass, setIsSavingPass] = useState(false);
+    const [passSuccess, setPassSuccess] = useState(false);
+    const [passError, setPassError] = useState<string | null>(null);
+
     // Avatar Editing State
     const [isEditingAvatar, setIsEditingAvatar] = useState(false);
     const [tempAvatar, setTempAvatar] = useState(client.avatar || '');
@@ -386,15 +392,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                                 ) : (
                                     <div className="group/name flex items-center justify-center gap-2 mb-1 relative">
                                         <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-tight">{client.name}</h2>
-                                        {userRole === Role.ADMIN && (
-                                            <button
-                                                onClick={() => { setIsEditingName(true); setTempName(client.name); }}
-                                                className="opacity-0 group-hover/name:opacity-100 p-1.5 text-gray-500 hover:text-brand-500 hover:bg-brand-500/10 rounded-lg transition-all"
-                                                title="Editar Nombre"
-                                            >
-                                                <Edit3 size={16} />
-                                            </button>
-                                        )}
+                                        <button
+                                            onClick={() => { setIsEditingName(true); setTempName(client.name); }}
+                                            className="opacity-0 group-hover/name:opacity-100 p-1.5 text-gray-500 hover:text-brand-500 hover:bg-brand-500/10 rounded-lg transition-all"
+                                            title="Editar Nombre"
+                                        >
+                                            <Edit3 size={16} />
+                                        </button>
                                     </div>
                                 )}
 
@@ -793,8 +797,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
 
                                     <div className="bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 space-y-10 shadow-3xl">
                                         <div className="text-center space-y-2">
-                                            <h3 className="text-xl font-bold text-white tracking-tight">Código de Acceso (6 Dígitos)</h3>
-                                            <p className="text-gray-500 text-sm">Ingresa el nuevo código que usarás para identificarte</p>
+                                            <h3 className="text-xl font-bold text-white tracking-tight">Código Maestro (6 Dígitos)</h3>
+                                            <p className="text-gray-500 text-sm">Configura tu PIN de seguridad de 6 dígitos</p>
                                         </div>
 
                                         <div className="flex justify-between gap-3 max-w-sm mx-auto">
@@ -835,6 +839,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                                                 />
                                             ))}
                                         </div>
+                                        <p className="text-[10px] text-gray-600 text-center font-bold uppercase tracking-widest mt-2">PIN Maestro (Acceso Rápido)</p>
 
                                         <div className="flex items-center gap-4 bg-orange-500/5 border border-orange-500/10 p-5 rounded-2xl">
                                             <div className="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center shrink-0">
@@ -878,6 +883,63 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                                             {tempPin.length === 6 && (
                                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-shimmer" />
                                             )}
+                                        </button>
+                                    </div>
+
+                                    <div className="mt-12 pt-10 border-t border-white/5 space-y-8">
+                                        <div className="text-center space-y-2">
+                                            <h3 className="text-xl font-bold text-white tracking-tight">Cambiar Contraseña</h3>
+                                            <p className="text-gray-500 text-sm">Usa una contraseña fuerte de 8 o más caracteres</p>
+                                        </div>
+
+                                        <div className="relative group max-w-sm mx-auto">
+                                            <div className="absolute inset-y-0 left-4 flex items-center text-gray-500 pointer-events-none group-focus-within:text-brand-500 transition-colors">
+                                                <Key size={18} />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="Nueva Contraseña"
+                                                className="w-full bg-dark-900/50 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white font-bold outline-none focus:border-brand-500 focus:bg-brand-500/5 transition-all text-sm"
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                            />
+                                        </div>
+
+                                        {passError && (
+                                            <div className="flex items-center gap-2 text-red-500 text-[10px] font-bold uppercase justify-center animate-in shake">
+                                                <AlertCircle size={14} />
+                                                {passError}
+                                            </div>
+                                        )}
+
+                                        <button
+                                            disabled={newPassword.length < 6 || isSavingPass || passSuccess}
+                                            onClick={async () => {
+                                                setIsSavingPass(true);
+                                                setPassError(null);
+
+                                                const { error } = await (window as any).supabase.auth.updateUser({
+                                                    password: newPassword
+                                                });
+
+                                                if (error) {
+                                                    setPassError(error.message);
+                                                    setIsSavingPass(false);
+                                                } else {
+                                                    setIsSavingPass(false);
+                                                    setPassSuccess(true);
+                                                    setNewPassword('');
+                                                    setTimeout(() => setPassSuccess(false), 3000);
+                                                }
+                                            }}
+                                            className={`w-full max-w-sm mx-auto flex py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-300 relative overflow-hidden ${newPassword.length >= 6
+                                                ? 'bg-white text-black hover:bg-brand-500 shadow-xl'
+                                                : 'bg-white/5 text-gray-600 border border-white/5'
+                                                }`}
+                                        >
+                                            <span className="w-full flex items-center justify-center gap-2">
+                                                {isSavingPass ? <RefreshCcw className="animate-spin" size={16} /> : passSuccess ? <CheckCircle size={16} /> : 'Actualizar Contraseña'}
+                                            </span>
                                         </button>
                                     </div>
 

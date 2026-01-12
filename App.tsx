@@ -527,25 +527,20 @@ export default function App() {
         }
 
         // 3. Local State Optimistic Update
+        const lowerRole = role.toLowerCase();
+
+        // Update Session for everyone
+        setLoggedInUser(prev => ({ ...prev, ...updatedData }));
+
         if (role === Role.CLIENT) {
-            const updatedClient = { ...loggedInUser, ...updatedData };
-            handleUpdateClient(updatedClient);
-        } else if (role === Role.BARBER) {
-            // If it's a barber, we must update the Barber list AND the current user session wrapper
-            const barber = barbers.find(b => b.id === loggedInUser.id)!;
-            const updatedBarber: Barber = {
-                ...barber,
-                ...(updatedData as Partial<Barber>)
-            };
+            setClients(prev => prev.map(c => c.id === loggedInUser.id ? { ...c, ...updatedData } : c));
+        } else if (role === Role.BARBER || role === Role.ADMIN) {
+            // Update the Barber list if applicable (Admins are also in the barber list)
+            setBarbers(prev => prev.map(b => b.id === loggedInUser.id ? { ...b, ...updatedData as any } : b));
 
-            handleUpdateBarber(updatedBarber);
-
-            // Update Session
-            setLoggedInUser(prev => ({ ...prev, ...updatedData }));
-        } else if (role === Role.ADMIN) {
-            const updatedAdmin = { ...adminProfile, ...updatedData };
-            setAdminProfile(updatedAdmin);
-            setLoggedInUser(updatedAdmin);
+            if (role === Role.ADMIN) {
+                setAdminProfile(prev => ({ ...prev, ...updatedData }));
+            }
         }
     };
 
@@ -554,16 +549,32 @@ export default function App() {
         // 1. Update local state
         setClients(prev => prev.map(c => c.id === clientId ? { ...c, preferences: prefs } : c));
 
+        // If current user is the client, update session too
+        if (loggedInUser.id === clientId) {
+            setLoggedInUser(prev => ({ ...prev, preferences: prefs }));
+        }
+
         // 2. Persist to Supabase
-        const { error } = await supabase
+        // First try profiles (new master for preferences)
+        const { error: profError } = await supabase
+            .from('profiles')
+            .update({ preferences: prefs })
+            .eq('id', clientId);
+
+        if (profError) {
+            console.error('❌ Error updating preferences in Profiles:', profError.message);
+        }
+
+        // Also update clients table for backward compatibility/specific client logic
+        const { error: clientError } = await supabase
             .from('clients')
             .update({ preferences: prefs })
             .eq('id', clientId);
 
-        if (error) {
-            console.error('❌ Error updating preferences in Supabase:', error.message);
+        if (clientError) {
+            console.warn('⚠️ Error updating preferences in Clients table:', clientError.message);
         } else {
-            console.log('✅ Preferences persisted for client:', clientId);
+            console.log('✅ Preferences persisted everywhere for user:', clientId);
         }
     };
     const handleAddService = (serviceData: Omit<Service, 'id'>) => setServices(prev => [...prev, { id: `s-${Math.random()}`, ...serviceData }]);
