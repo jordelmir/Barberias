@@ -185,6 +185,17 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
     const [tempAvatar, setTempAvatar] = useState(client.avatar || '');
     const [imgError, setImgError] = useState(false);
 
+    // Name Editing State (Admin Only)
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [tempName, setTempName] = useState(client.name);
+
+    const handleSaveName = () => {
+        if (tempName.trim()) {
+            onUpdateProfile({ name: tempName.trim() });
+            setIsEditingName(false);
+        }
+    };
+
     // Cancellation Wizard State
     const [cancelStep, setCancelStep] = useState<'IDLE' | 'REASON' | 'CALL_CHECK' | 'CONFIRM' | 'SUCCESS'>('IDLE');
     const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
@@ -355,7 +366,38 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                             </div>
                         ) : (
                             <>
-                                <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-tight mb-1">{client.name}</h2>
+                                {isEditingName ? (
+                                    <div className="flex items-center gap-2 mb-2 w-full animate-in zoom-in duration-200">
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            className="bg-dark-900 border border-brand-500 rounded-lg px-3 py-1 text-xl md:text-2xl font-black text-white outline-none w-full shadow-[0_0_15px_rgba(240,180,41,0.2)]"
+                                            value={tempName}
+                                            onChange={(e) => setTempName(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') handleSaveName();
+                                                if (e.key === 'Escape') setIsEditingName(false);
+                                            }}
+                                        />
+                                        <button onClick={handleSaveName} className="p-2 bg-brand-500 text-black rounded-lg hover:bg-brand-400 shadow-lg shrink-0">
+                                            <Check size={20} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="group/name flex items-center justify-center gap-2 mb-1 relative">
+                                        <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-tight">{client.name}</h2>
+                                        {userRole === Role.ADMIN && (
+                                            <button
+                                                onClick={() => { setIsEditingName(true); setTempName(client.name); }}
+                                                className="opacity-0 group-hover/name:opacity-100 p-1.5 text-gray-500 hover:text-brand-500 hover:bg-brand-500/10 rounded-lg transition-all"
+                                                title="Editar Nombre"
+                                            >
+                                                <Edit3 size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="flex items-center gap-2 mb-6">
                                     <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white/5 text-gray-400 border border-white/5">
                                         Miembro desde {client.joinDate.getFullYear()}

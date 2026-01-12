@@ -379,7 +379,37 @@ export default function App() {
     };
 
     // Profile Updater (Polymorphic: Handles Barber or Client)
-    const handleUpdateProfile = (updatedData: Partial<Client>) => {
+    const handleUpdateProfile = async (updatedData: Partial<Client>) => {
+        try {
+            // 1. Update Core Profile (Supabase)
+            if (loggedInUser.id) {
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .update(updatedData)
+                    .eq('id', loggedInUser.id);
+
+                if (profileError) console.error('Error updating profile:', profileError);
+
+                // 2. Propagate to specific tables (Barbers/Clients) for data consistency
+                // Note: Triggers ideally handle this, but explicit update ensures immediate consistency for this UI
+                if (role === Role.BARBER || role === Role.ADMIN) {
+                    await supabase
+                        .from('barbers')
+                        .update(updatedData)
+                        .eq('profile_id', loggedInUser.id);
+                } else if (role === Role.CLIENT) {
+                    // For clients, if the ID matches the auth ID
+                    await supabase
+                        .from('clients')
+                        .update(updatedData)
+                        .eq('profile_id', loggedInUser.id); // Assuming linked via profile_id or id
+                }
+            }
+        } catch (err) {
+            console.error('Failed to persist profile update:', err);
+        }
+
+        // 3. Local State Optimistic Update
         if (role === Role.CLIENT) {
             const updatedClient = { ...loggedInUser, ...updatedData };
             handleUpdateClient(updatedClient);
