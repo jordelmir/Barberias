@@ -6,12 +6,12 @@ const supabase = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABA
 
 async function forceReset() {
     const email = 'admin.barber.001@chronos.app';
-    const password = 'Chronos.LSP9PEYF!';
+    const password = 'Chronos.2026!';
 
     console.log(`--- 🛠️ FORCE RESETTING ${email} ---`);
 
     // 1. Find User
-    const { data: { users } } = await supabase.auth.admin.listUsers();
+    const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
     const user = users.find(u => u.email === email);
 
     if (!user) {

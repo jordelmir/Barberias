@@ -212,6 +212,7 @@ export default function App() {
 
 
     // --- Login Handler (Secure: Supabase Auth + Identification Lookup) ---
+    // Build Trigger: CSP Consistently Applied
     const handleLogin = async (identityRaw: string, codeRaw: string) => {
         setAuthError(null);
         const identity = identityRaw.trim();
