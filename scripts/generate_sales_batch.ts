@@ -48,7 +48,6 @@ async function main() {
     try {
         // --- PRE-FETCH ALL USERS (Optimization) ---
         console.log("🔍 Pre-fetching existing users for collision handling...");
-        // Fetch up to 1000 users (enough for our batch)
         const { data: { users: allUsers }, error: listError } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
 
         if (listError) console.error("   ⚠️ Failed to list users:", listError.message);
@@ -62,13 +61,10 @@ async function main() {
         const managerPassword = '000000'; // As requested
         const managerId = '000000000'; // Used as identification
 
-        // Check if exists or create
-        // Simplification: We attempt create, if fails we log.
-        // For accurate User ID we might need to search but admin.createUser returns it if new.
-
         const { data: managerOrg } = await supabase.from('organizations').insert({ name: 'Chronos Barberia (Sede Central)' }).select().single();
 
         if (managerOrg) {
+            let mgrUserId: string | null = null;
             const { data: managerAuth, error: managerAuthErr } = await supabase.auth.admin.createUser({
                 email: managerEmail,
                 password: managerPassword,
@@ -76,9 +72,25 @@ async function main() {
                 user_metadata: { name: 'Gerente General' }
             });
 
-            if (managerAuth && managerAuth.user) {
-                await supabase.from('profiles').insert({
-                    id: managerAuth.user.id,
+            if (managerAuth?.user) {
+                mgrUserId = managerAuth.user.id;
+            } else if (managerAuthErr?.message?.includes("already registered") || managerAuthErr?.status === 422 || managerAuthErr?.status === 400) {
+                // Fetch existing from Map
+                mgrUserId = userMap.get(managerEmail.toLowerCase()) || null;
+                if (mgrUserId) {
+                    console.log("   🔸 Manager exists, ID retrieved from map.");
+                    await supabase.auth.admin.updateUserById(mgrUserId, { password: managerPassword });
+                } else {
+                    console.error(`   ❌ Manager exists but not found in pre-fetch list!`);
+                }
+            } else {
+                console.log("   ⚠️ Manager auth error:", managerAuthErr?.message);
+            }
+
+            if (mgrUserId) {
+                // Upsert Profile
+                await supabase.from('profiles').upsert({
+                    id: mgrUserId,
                     organization_id: managerOrg.id,
                     email: managerEmail,
                     role: 'ADMIN',
@@ -86,21 +98,19 @@ async function main() {
                     created_at: new Date().toISOString()
                 });
 
-                // Barber entry for dashboard access
+                // Barber entry
                 await supabase.from('barbers').insert({
                     organization_id: managerOrg.id,
-                    profile_id: managerAuth.user.id,
+                    profile_id: mgrUserId,
                     name: 'Gerente General',
                     email: managerEmail,
-                    identification: managerId, // 000000000
-                    access_code: '000000',     // 000000 (Legacy Login Support)
+                    identification: managerId,
+                    access_code: '000000',
                     tier: 'MASTER',
                     is_admin: true
                 });
 
                 credentialsContent += `| MASTER | **Chronos Central** | **${managerEmail}** | \`${managerPassword}\` | 👑 MANAGER |\n`;
-            } else {
-                console.log("   ⚠️ Manager auth creation failed (maybe exists):", managerAuthErr?.message);
             }
         }
 
@@ -110,13 +120,10 @@ async function main() {
             const orgName = `Barberia Premium #${i.toString().padStart(3, '0')}`;
             const email = `admin.barber.${i.toString().padStart(3, '0')}@chronos.app`;
             const password = `Chronos.${Math.random().toString(36).slice(-8).toUpperCase()}!`;
-            // ... (rest of loop code)
-            const idCode = i.toString().padStart(3, '0') + "000000"; // Fake ID for reference
 
             console.log(`[${i}/${BATCH_SIZE}] Provisioning ${orgName}...`);
 
-            // 1. Create Organization (Using RPC or Insert if policies allow, but Service Key bypasses RLS)
-            // Note: We insert directly since we have Service Key.
+            // 1. Create Organization
             const { data: orgData, error: orgError } = await supabase
                 .from('organizations')
                 .insert({ name: orgName })
@@ -139,17 +146,15 @@ async function main() {
             });
 
             if (authError) {
-                // If error is "User already registered", fetch the user
+                // Check collision using map
                 if (authError.message.includes("already registered") || authError.status === 400 || authError.status === 422) {
-                    console.log(`   🔸 User ${email} exists, fetching ID...`);
-                    const { data: existingUser } = await supabase.auth.admin.listUsers();
-                    const found = existingUser.users.find(u => u.email === email);
-                    if (found) {
-                        userId = found.id;
-                        // Optional: Update password here if we wanted to enforce it
+                    userId = userMap.get(email.toLowerCase()) || null;
+
+                    if (userId) {
+                        // Optional: Update password here
                         await supabase.auth.admin.updateUserById(userId, { password: password });
                     } else {
-                        console.error(`   ❌ Failed to find existing user ${email}`);
+                        console.error(`   ❌ Failed to find ID for existing user ${email} in map.`);
                         continue;
                     }
                 } else {
@@ -162,7 +167,7 @@ async function main() {
 
             if (!userId) continue;
 
-            // 3. Create Admin Profile (Upsert to be safe)
+            // 3. Create Admin Profile (Upsert)
             const { error: profileError } = await supabase
                 .from('profiles')
                 .upsert({
@@ -179,14 +184,14 @@ async function main() {
                 continue;
             }
 
-            // 4. Initialize Default Services (So app works out of box)
+            // 4. Initialize Default Services
             await supabase.from('services').insert([
                 { organization_id: orgData.id, name: 'Corte Clásico', duration_minutes: 30, price: 15000 },
                 { organization_id: orgData.id, name: 'Barba & Toalla', duration_minutes: 20, price: 10000 },
                 { organization_id: orgData.id, name: 'Experiencia Completa', duration_minutes: 60, price: 25000 },
             ]);
 
-            // 5. Initialize One Barber (So dashboard works)
+            // 5. Initialize One Barber
             await supabase.from('barbers').insert([
                 {
                     organization_id: orgData.id,
