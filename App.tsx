@@ -22,6 +22,8 @@ import { SnakeGame } from './components/SnakeGame';
 import { ArcadePage } from './components/ArcadePage';
 import { CinematicTransitions } from './components/CinematicTransitions';
 import { useRealtimeAppointments } from './hooks/useRealtimeAppointments';
+import { supabase } from './supabaseClient';
+
 export default function App() {
     const [appointments, setAppointments] = useState<Appointment[]>(() => {
         const saved = localStorage.getItem('barberia_appointments');
@@ -256,6 +258,14 @@ export default function App() {
                 if (profileError) {
                     console.error("❌ Auth SUCCESS but Profile Load FAILED:", profileError.message);
                     setAuthError("Error al cargar perfil. Contacte soporte.");
+                    return;
+                }
+
+                // Check If Blocked (Backend Managed Status)
+                if (profile.is_blocked) {
+                    console.warn("🚫 Blocked user attempted login:", loginEmail);
+                    setAuthError("Tu cuenta está suspendida. Contacta a un administrador.");
+                    await supabase.auth.signOut();
                     return;
                 }
 

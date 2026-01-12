@@ -52,6 +52,7 @@ export interface Client {
   avatar?: string;
   sticker?: string; // Aesthetic emoji/sticker
   preferences?: CutPreferences;
+  isBlocked?: boolean;
 }
 
 export interface Service {
