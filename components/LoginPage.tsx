@@ -6,9 +6,10 @@ import { MatrixRain } from './MatrixRain';
 interface LoginPageProps {
     onLogin: (identity: string, code: string) => Promise<void>;
     error?: string | null;
+    isConfigured?: boolean;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, error }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, error, isConfigured = true }) => {
     const [identity, setIdentity] = useState('');
     const [code, setCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -70,6 +71,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, error }) => {
                                 <div className="bg-red-500/10 border border-red-500/30 p-3 rounded-lg flex items-start gap-3 animate-in shake">
                                     <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
                                     <p className="text-xs text-red-200">{error}</p>
+                                </div>
+                            )}
+
+                            {!isConfigured && (
+                                <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-lg flex items-start gap-3 animate-in fade-in duration-1000">
+                                    <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={16} />
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-bold text-amber-500 uppercase">Configuración Incompleta</p>
+                                        <p className="text-[10px] text-amber-200/70 leading-relaxed">
+                                            El sistema no detecta las llaves de Supabase. Verifica las variables de entorno en Vercel.
+                                        </p>
+                                    </div>
                                 </div>
                             )}
 

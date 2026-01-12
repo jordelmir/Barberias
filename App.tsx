@@ -109,6 +109,11 @@ export default function App() {
     const [authError, setAuthError] = useState<string | null>(null);
     const [role, setRole] = useState<Role>(Role.ADMIN);
     const [organizationId, setOrganizationId] = useState<string | null>(null);
+    const isSupabaseConfigured = useMemo(() => {
+        // Simple check: does the auth service look like the dummy?
+        // In the dummy, getUser returns a specific error
+        return !supabase.auth.getUser.toString().includes('Supabase URL/Key missing');
+    }, []);
 
     // ⚡ ENABLE REALTIME
     useRealtimeAppointments(organizationId, setAppointments);
@@ -620,7 +625,7 @@ export default function App() {
             <>
                 {isTVTurningOff && <CinematicTransitions type="LOGOUT" />}
                 {loginTransition && <CinematicTransitions type="LOGIN" profile={loginTransition.profile} userName={loginTransition.name} />}
-                <LoginPage onLogin={handleLogin} error={authError} />
+                <LoginPage onLogin={handleLogin} error={authError} isConfigured={isSupabaseConfigured} />
             </>
         );
     }
