@@ -302,76 +302,11 @@ export default function App() {
                 }
             }
         } catch (err: any) {
-            console.log("Auth attempt failed, checking legacy local users...", err.message);
+            console.error("❌ Login failed:", err.message);
+            setAuthError("Error de conexión o credenciales. Intenta de nuevo.");
         }
-
-        // 2. Fallback: Legacy / Simulated Checks (Barbers & Clients with PINs)
-
-        // 2.1 Check Admin (Legacy Local State)
-        if (
-            (identity === adminProfile.identification || identity === adminProfile.email) &&
-            code === adminProfile.accessCode
-        ) {
-            setLoginTransition({ profile: Role.ADMIN, name: adminProfile.name });
-            setTimeout(() => {
-                setRole(Role.ADMIN);
-                setLoggedInUser(adminProfile);
-                setIsAuthenticated(true);
-                setLoginTransition(null);
-            }, 3000);
-            return;
-        }
-
-        // 2.2 Check Barbers
-        const barberFound = barbers.find(b =>
-            (b.identification === identity || b.email === identity) && b.accessCode === code
-        );
-
-        if (barberFound) {
-            setLoginTransition({ profile: Role.BARBER, name: barberFound.name });
-            setTimeout(() => {
-                setRole(Role.BARBER); // CORRECT: Set specific Barber Role
-
-                // Create a "Client-like" object for the barber to satisfy the User interface
-                const barberAsUser: Client = {
-                    id: barberFound.id,
-                    name: barberFound.name,
-                    phone: '',
-                    email: barberFound.email,
-                    identification: barberFound.identification,
-                    accessCode: barberFound.accessCode,
-                    bookingHistory: [],
-                    joinDate: new Date(),
-                    points: 0,
-                    avatar: barberFound.avatar,
-                    sticker: barberFound.sticker,
-                    notes: `Staff: ${barberFound.tier}`
-                };
-                setLoggedInUser(barberAsUser);
-                setIsAuthenticated(true);
-                setLoginTransition(null);
-            }, 5500); // Allow full 5.5s animation
-            return;
-        }
-
-        // 2.3 Check Clients
-        const clientFound = clients.find(c =>
-            (c.identification === identity || c.email === identity) && c.accessCode === code
-        );
-
-        if (clientFound) {
-            setLoginTransition({ profile: Role.CLIENT, name: clientFound.name });
-            setTimeout(() => {
-                setRole(Role.CLIENT);
-                setLoggedInUser(clientFound);
-                setIsAuthenticated(true);
-                setLoginTransition(null);
-            }, 3500);
-            return;
-        }
-
-        setAuthError("Credenciales inválidas. Verifica tu Cédula/Email y Código.");
     };
+
 
     const handleLogout = () => {
         setIsTVTurningOff(true); // START TV OFF ANIMATION
