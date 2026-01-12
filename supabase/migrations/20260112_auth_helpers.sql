@@ -5,22 +5,16 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-    -- Check barbers first (Staff/Admins)
+    -- Check barbers and profiles (Staff/Admins)
     RETURN QUERY 
     SELECT p.email 
     FROM profiles p
     JOIN barbers b ON b.profile_id = p.id
     WHERE b.identification = target_id
     LIMIT 1;
-
-    -- If not found, check clients
-    IF NOT FOUND THEN
-        RETURN QUERY
-        SELECT c.email
-        FROM clients c
-        WHERE c.identification = target_id
-        LIMIT 1;
-    END IF;
+    
+    -- Note: Clients table doesn't have identification column
+    -- Clients should login with email directly
 END;
 $$ LANGUAGE plpgsql;
 

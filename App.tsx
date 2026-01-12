@@ -479,27 +479,43 @@ export default function App() {
         try {
             // 1. Update Core Profile (Supabase)
             if (loggedInUser.id) {
+                // Map frontend keys to database column names
+                const payload: any = { ...updatedData };
+
+                // Critical: Map avatar to avatar_url for database
+                if (payload.avatar !== undefined) {
+                    payload.avatar_url = payload.avatar;
+                    delete payload.avatar;
+                }
+
+                console.log('📝 Updating profile with payload:', payload);
+
                 const { error: profileError } = await supabase
                     .from('profiles')
-                    .update(updatedData)
+                    .update(payload)
                     .eq('id', loggedInUser.id);
 
-                if (profileError) console.error('Error updating profile:', profileError);
-
-                // 2. Propagate to specific tables (Barbers/Clients) for data consistency
-                // Note: Triggers ideally handle this, but explicit update ensures immediate consistency for this UI
-                if (role === Role.BARBER || role === Role.ADMIN) {
-                    await supabase
-                        .from('barbers')
-                        .update(updatedData)
-                        .eq('profile_id', loggedInUser.id);
-                } else if (role === Role.CLIENT) {
-                    // For clients, if the ID matches the auth ID
-                    await supabase
-                        .from('clients')
-                        .update(updatedData)
-                        .eq('profile_id', loggedInUser.id); // Assuming linked via profile_id or id
+                if (profileError) {
+                    console.error('❌ Error updating profile:', profileError);
+                } else {
+                    console.log('✅ Profile updated successfully');
                 }
+
+                // 2. Propagate to barbers table if user is barber/admin
+                if (role === Role.BARBER || role === Role.ADMIN) {
+                    const { error: barberError } = await supabase
+                        .from('barbers')
+                        .update(payload)
+                        .eq('profile_id', loggedInUser.id);
+
+                    if (barberError) {
+                        console.error('⚠️ Error updating barber:', barberError);
+                    } else {
+                        console.log('✅ Barber record updated');
+                    }
+                }
+
+                // Note: Clients table doesn't have profile_id column, so we skip it
             }
         } catch (err) {
             console.error('Failed to persist profile update:', err);
