@@ -20,6 +20,7 @@ import { CancellationAnalysis } from './components/CancellationAnalysis'; // New
 import { Scissors, User, LayoutDashboard, Menu, Plus, Settings, FileText, Users, ChevronDown, Bell, LogOut, Briefcase, Lock, Tag, Gauge, BarChart3, AlertCircle, Gamepad2, Zap, X } from 'lucide-react';
 import { SnakeGame } from './components/SnakeGame';
 import { ArcadePage } from './components/ArcadePage';
+import { CinematicTransitions } from './components/CinematicTransitions';
 import { useRealtimeAppointments } from './hooks/useRealtimeAppointments';
 export default function App() {
     const [appointments, setAppointments] = useState<Appointment[]>(() => {
@@ -122,6 +123,10 @@ export default function App() {
     // ADMIN SPECIFIC STATE: View Mode (Dashboard vs Workstation)
     const [adminViewMode, setAdminViewMode] = useState<'DASHBOARD' | 'WORKSTATION'>('DASHBOARD');
 
+    // --- Cinematic State ---
+    const [loginTransition, setLoginTransition] = useState<{ profile: Role, name: string } | null>(null);
+    const [isTVTurningOff, setIsTVTurningOff] = useState(false);
+
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
     // --- Derived State for Access Control ---
@@ -154,9 +159,13 @@ export default function App() {
             (identity === adminProfile.identification || identity === adminProfile.email) &&
             code === adminProfile.accessCode
         ) {
-            setRole(Role.ADMIN);
-            setLoggedInUser(adminProfile);
-            setIsAuthenticated(true);
+            setLoginTransition({ profile: Role.ADMIN, name: adminProfile.name });
+            setTimeout(() => {
+                setRole(Role.ADMIN);
+                setLoggedInUser(adminProfile);
+                setIsAuthenticated(true);
+                setLoginTransition(null);
+            }, 3000);
             return;
         }
 
@@ -166,25 +175,29 @@ export default function App() {
         );
 
         if (barberFound) {
-            setRole(Role.BARBER); // CORRECT: Set specific Barber Role
+            setLoginTransition({ profile: Role.BARBER, name: barberFound.name });
+            setTimeout(() => {
+                setRole(Role.BARBER); // CORRECT: Set specific Barber Role
 
-            // Create a "Client-like" object for the barber to satisfy the User interface
-            const barberAsUser: Client = {
-                id: barberFound.id,
-                name: barberFound.name,
-                phone: '',
-                email: barberFound.email,
-                identification: barberFound.identification,
-                accessCode: barberFound.accessCode,
-                bookingHistory: [],
-                joinDate: new Date(),
-                points: 0,
-                avatar: barberFound.avatar,
-                sticker: barberFound.sticker,
-                notes: `Staff: ${barberFound.tier}`
-            };
-            setLoggedInUser(barberAsUser);
-            setIsAuthenticated(true);
+                // Create a "Client-like" object for the barber to satisfy the User interface
+                const barberAsUser: Client = {
+                    id: barberFound.id,
+                    name: barberFound.name,
+                    phone: '',
+                    email: barberFound.email,
+                    identification: barberFound.identification,
+                    accessCode: barberFound.accessCode,
+                    bookingHistory: [],
+                    joinDate: new Date(),
+                    points: 0,
+                    avatar: barberFound.avatar,
+                    sticker: barberFound.sticker,
+                    notes: `Staff: ${barberFound.tier}`
+                };
+                setLoggedInUser(barberAsUser);
+                setIsAuthenticated(true);
+                setLoginTransition(null);
+            }, 5500); // Allow full 5.5s animation
             return;
         }
 
@@ -194,9 +207,13 @@ export default function App() {
         );
 
         if (clientFound) {
-            setRole(Role.CLIENT);
-            setLoggedInUser(clientFound);
-            setIsAuthenticated(true);
+            setLoginTransition({ profile: Role.CLIENT, name: clientFound.name });
+            setTimeout(() => {
+                setRole(Role.CLIENT);
+                setLoggedInUser(clientFound);
+                setIsAuthenticated(true);
+                setLoginTransition(null);
+            }, 3500);
             return;
         }
 
@@ -204,10 +221,14 @@ export default function App() {
     };
 
     const handleLogout = () => {
-        setIsAuthenticated(false);
-        setRole(Role.ADMIN); // Reset to default for safety
-        setAuthError(null);
-        setAdminViewMode('DASHBOARD'); // Reset admin view
+        setIsTVTurningOff(true); // START TV OFF ANIMATION
+        setTimeout(() => {
+            setIsAuthenticated(false);
+            setRole(Role.ADMIN); // Reset to default for safety
+            setAuthError(null);
+            setAdminViewMode('DASHBOARD'); // Reset admin view
+            setIsTVTurningOff(false);
+        }, 1500); // Wait for white line flash
     };
 
     // Calculate Metrics Real-time (Scoped by visibleAppointments)
@@ -438,7 +459,13 @@ export default function App() {
     // --- RENDER ---
 
     if (!isAuthenticated) {
-        return <LoginPage onLogin={handleLogin} error={authError} />;
+        return (
+            <>
+                {isTVTurningOff && <CinematicTransitions type="LOGOUT" />}
+                {loginTransition && <CinematicTransitions type="LOGIN" profile={loginTransition.profile} userName={loginTransition.name} />}
+                <LoginPage onLogin={handleLogin} error={authError} />
+            </>
+        );
     }
 
     // Define Layout Logic
@@ -451,316 +478,334 @@ export default function App() {
             : null;
 
     return (
-        <div className="min-h-screen text-gray-100 font-sans selection:bg-brand-500/30 relative">
+        <>
+            {/* --- CINEMATIC TRANSITION OVERLAYS (OUTSIDE THE SHRINKING CONTENT) --- */}
+            {/* GLOBAL OVERLAYS - Fixed Position, Z-Index 9999+ */}
+            {loginTransition && (
+                <CinematicTransitions
+                    type="LOGIN"
+                    profile={loginTransition.profile}
+                    userName={loginTransition.name}
+                />
+            )}
 
-            {/* HIGH TECH BACKGROUND LAYER */}
-            <MatrixBackground />
+            {/* TV LOGOUT OVERLAY */}
+            {isTVTurningOff && (
+                <CinematicTransitions type="LOGOUT" />
+            )}
 
-            {/* CONTENT LAYER - Z-Index 10 ensures it floats above the canvas */}
-            <div className="relative z-10 min-h-screen flex flex-col">
+            {/* MAIN APP CONTENT - THIS IS WHAT SHRINKS LIKE A TV */}
+            <div className={`min-h-screen text-gray-100 font-sans selection:bg-brand-500/30 relative origin-center transition-all duration-1000 ${isTVTurningOff ? 'animate-tv-turn-off pointer-events-none' : ''}`}>
 
-                {/* Navigation Bar - NOW WITH GLASS MORPHISM */}
-                <nav className="glass-morphism h-16 fixed top-0 w-full z-50 flex items-center justify-between px-4 md:px-6 shadow-lg border-b-0">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-brand-500 p-1.5 rounded-lg text-black shadow-[0_0_15px_rgba(240,180,41,0.4)]">
-                            <Scissors size={20} strokeWidth={2.5} />
+                {/* HIGH TECH BACKGROUND LAYER */}
+                <MatrixBackground />
+
+                {/* CONTENT LAYER - Z-Index 10 ensures it floats above the canvas */}
+                <div className="relative z-10 min-h-screen flex flex-col">
+
+                    {/* Navigation Bar - NOW WITH GLASS MORPHISM */}
+                    <nav className="glass-morphism h-16 fixed top-0 w-full z-50 flex items-center justify-between px-4 md:px-6 shadow-lg border-b-0">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-brand-500 p-1.5 rounded-lg text-black shadow-[0_0_15px_rgba(240,180,41,0.4)]">
+                                <Scissors size={20} strokeWidth={2.5} />
+                            </div>
+                            <span className="font-bold text-xl tracking-tight text-white hidden sm:inline">CHRONOS<span className="text-brand-500">.BARBER</span></span>
                         </div>
-                        <span className="font-bold text-xl tracking-tight text-white hidden sm:inline">CHRONOS<span className="text-brand-500">.BARBER</span></span>
-                    </div>
 
-                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4">
 
-                        {role === Role.ADMIN && (
-                            <div className="flex items-center gap-2 glass-morphism-inner p-1 rounded-full border border-white/5">
-                                <button
-                                    onClick={() => setAdminViewMode('DASHBOARD')}
-                                    className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-full transition-all ${adminViewMode === 'DASHBOARD' ? 'bg-dark-700 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}
-                                >
-                                    <BarChart3 size={14} />
-                                    <span className="hidden md:inline">Gerencia</span>
-                                </button>
-                                <button
-                                    onClick={() => setAdminViewMode('WORKSTATION')}
-                                    className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-full transition-all ${adminViewMode === 'WORKSTATION' ? 'bg-brand-500 text-black shadow-sm' : 'text-gray-400 hover:text-white'}`}
-                                >
-                                    <Gauge size={14} />
-                                    <span className="hidden md:inline">Mi Estación</span>
-                                </button>
-                            </div>
-                        )}
-
-                        <div className="flex items-center gap-3 pl-4 border-l border-white/10 h-8">
-                            <div className="text-right hidden sm:block leading-tight">
-                                <div className="text-xs font-bold text-white">{loggedInUser.name}</div>
-                                <div className="text-[10px] text-brand-500 font-mono tracking-wide uppercase">
-                                    {role === Role.ADMIN ? 'Administrador' : role === Role.BARBER ? 'Barbero' : 'Cliente'}
+                            {role === Role.ADMIN && (
+                                <div className="flex items-center gap-2 glass-morphism-inner p-1 rounded-full border border-white/5">
+                                    <button
+                                        onClick={() => setAdminViewMode('DASHBOARD')}
+                                        className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-full transition-all ${adminViewMode === 'DASHBOARD' ? 'bg-dark-700 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}
+                                    >
+                                        <BarChart3 size={14} />
+                                        <span className="hidden sm:inline">Panel</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setAdminViewMode('WORKSTATION')}
+                                        className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-full transition-all ${adminViewMode === 'WORKSTATION' ? 'bg-brand-500 text-black shadow-[0_0_10px_rgba(202,168,111,0.4)]' : 'text-gray-400 hover:text-white'}`}
+                                    >
+                                        <Scissors size={14} />
+                                        <span className="hidden sm:inline">Workstation</span>
+                                    </button>
                                 </div>
-                            </div>
-
-                            {/* Show Config Button for Barbers as well */}
-                            {(role === Role.BARBER || role === Role.ADMIN) && (
-                                <button
-                                    onClick={() => setIsShopRulesOpen(true)}
-                                    className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors mr-1"
-                                    title="Configuración de Agenda"
-                                >
-                                    <Settings size={18} />
-                                </button>
                             )}
 
-                            <button
-                                onClick={() => setIsProfileOpen(true)}
-                                className="group relative flex items-center gap-2 rounded-full hover:bg-white/10 transition-all p-0.5 pr-1 focus:outline-none focus:ring-2 focus:ring-brand-500/50"
-                                title="Abrir Perfil"
-                            >
-                                <div className="relative w-10 h-10 rounded-full bg-dark-600 border-2 border-dark-500 group-hover:border-brand-500 transition-colors shadow-lg overflow-hidden">
-                                    {loggedInUser.avatar ? (
-                                        <img src={loggedInUser.avatar} alt="Profile" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-tr from-brand-600 to-brand-400">
-                                            <User size={18} className="text-black" />
+                            <div className="flex items-center gap-3 pl-4 border-l border-white/10 h-8">
+                                <div className="text-right hidden sm:block leading-tight">
+                                    <div className="text-xs font-bold text-white">{loggedInUser.name}</div>
+                                    <div className="text-[10px] text-brand-500 font-mono tracking-wide uppercase">
+                                        {role === Role.ADMIN ? 'Administrador' : role === Role.BARBER ? 'Barbero' : 'Cliente'}
+                                    </div>
+                                </div>
+
+                                {/* Show Config Button for Barbers as well */}
+                                {(role === Role.BARBER || role === Role.ADMIN) && (
+                                    <button
+                                        onClick={() => setIsShopRulesOpen(true)}
+                                        className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors mr-1"
+                                        title="Configuración de Agenda"
+                                    >
+                                        <Settings size={18} />
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={() => setIsProfileOpen(true)}
+                                    className="group relative flex items-center gap-2 rounded-full hover:bg-white/10 transition-all p-0.5 pr-1 focus:outline-none focus:ring-2 focus:ring-brand-500/50"
+                                    title="Abrir Perfil"
+                                >
+                                    <div className="relative w-10 h-10 rounded-full bg-dark-600 border-2 border-dark-500 group-hover:border-brand-500 transition-colors shadow-lg overflow-hidden">
+                                        {loggedInUser.avatar ? (
+                                            <img src={loggedInUser.avatar} alt="Profile" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-tr from-brand-600 to-brand-400">
+                                                <User size={18} className="text-black" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <ChevronDown size={14} className="text-gray-500 group-hover:text-white transition-colors mr-1" />
+                                </button>
+
+                                <button
+                                    onClick={handleLogout}
+                                    className="ml-2 text-gray-500 hover:text-red-500 transition-colors"
+                                    title="Cerrar Sesión"
+                                >
+                                    <LogOut size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    </nav>
+
+                    {/* Main Content Area - with padding for navbar */}
+                    <main className="pt-24 px-4 md:px-6 flex-1 flex flex-col pb-4">
+
+                        {showAdminDashboard ? (
+                            <>
+                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                                    <div>
+                                        <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2 drop-shadow-lg">
+                                            {role === Role.BARBER && <Lock size={20} className="text-gray-500" />}
+                                            {role === Role.BARBER ? `Estación de Trabajo` : `Centro de Operaciones`}
+                                        </h1>
+                                        <p className="text-gray-400 text-sm mt-1 font-medium">
+                                            {role === Role.BARBER
+                                                ? `Barbero: ${loggedInUser.name}`
+                                                : adminViewMode === 'WORKSTATION'
+                                                    ? 'Modo Operativo Activo (Vista de Barbero)'
+                                                    : 'Gestión de rendimiento y agenda global'
+                                            }
+                                        </p>
+                                    </div>
+
+                                    {/* Management Toolbar - Only for ADMIN */}
+                                    {role === Role.ADMIN && adminViewMode === 'DASHBOARD' && (
+                                        <div className="flex flex-wrap gap-3">
+                                            <button
+                                                onClick={() => setIsCancellationReportOpen(true)}
+                                                className="flex items-center gap-2 glass-morphism-inner text-red-400 px-4 py-2 rounded-lg font-bold hover:bg-red-900/20 hover:text-red-300 border border-red-900/30 backdrop-blur transition-all"
+                                            >
+                                                <AlertCircle size={18} />
+                                                Reporte Cancelaciones
+                                            </button>
+                                            {/* Settings moved to nav bar for barbers, but kept here for explicit Admin Access */}
+                                            <button
+                                                onClick={() => setIsShopRulesOpen(true)}
+                                                className="flex items-center gap-2 glass-morphism-inner text-gray-300 px-4 py-2 rounded-lg font-bold hover:bg-white/10 hover:text-white border border-white/5 backdrop-blur transition-all"
+                                            >
+                                                <Settings size={18} />
+                                                Configuración
+                                            </button>
+                                            <button
+                                                onClick={() => setIsStyleEditorOpen(true)}
+                                                className="flex items-center gap-2 glass-morphism-inner text-gray-300 px-4 py-2 rounded-lg font-bold hover:bg-white/10 hover:text-white border border-white/5 backdrop-blur transition-all"
+                                            >
+                                                <Tag size={18} />
+                                                Estilos
+                                            </button>
+                                            <button
+                                                onClick={() => setIsBarberManagerOpen(true)}
+                                                className="flex items-center gap-2 glass-morphism-inner text-gray-300 px-4 py-2 rounded-lg font-bold hover:bg-white/10 hover:text-white border border-white/5 backdrop-blur transition-all"
+                                            >
+                                                <Briefcase size={18} />
+                                                Staff
+                                            </button>
+                                            <button
+                                                onClick={() => setIsClientManagerOpen(true)}
+                                                className="flex items-center gap-2 glass-morphism-inner text-gray-300 px-4 py-2 rounded-lg font-bold hover:bg-white/10 hover:text-white border border-white/5 backdrop-blur transition-all"
+                                            >
+                                                <Users size={18} />
+                                                Clientes
+                                            </button>
+                                            <button
+                                                onClick={() => setIsServiceManagerOpen(true)}
+                                                className="flex items-center gap-2 glass-morphism-inner text-gray-300 px-4 py-2 rounded-lg font-bold hover:bg-white/10 hover:text-white border border-white/5 backdrop-blur transition-all"
+                                            >
+                                                <Scissors size={18} />
+                                                Servicios
+                                            </button>
+                                            <button
+                                                onClick={() => setIsBookingModalOpen(true)}
+                                                className="flex items-center gap-2 bg-brand-500 text-black px-4 py-2 rounded-lg font-bold hover:bg-brand-400 shadow-[0_4px_20px_-5px_rgba(240,180,41,0.4)] transition-all transform hover:scale-105"
+                                            >
+                                                <Plus size={18} strokeWidth={3} />
+                                                Nueva Cita
+                                            </button>
                                         </div>
                                     )}
                                 </div>
-                                <ChevronDown size={14} className="text-gray-500 group-hover:text-white transition-colors mr-1" />
-                            </button>
 
-                            <button
-                                onClick={handleLogout}
-                                className="ml-2 text-gray-500 hover:text-red-500 transition-colors"
-                                title="Cerrar Sesión"
-                            >
-                                <LogOut size={18} />
-                            </button>
-                        </div>
-                    </div>
-                </nav>
-
-                {/* Main Content Area - with padding for navbar */}
-                <main className="pt-24 px-4 md:px-6 flex-1 flex flex-col pb-4">
-
-                    {showAdminDashboard ? (
-                        <>
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                                <div>
-                                    <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2 drop-shadow-lg">
-                                        {role === Role.BARBER && <Lock size={20} className="text-gray-500" />}
-                                        {role === Role.BARBER ? `Estación de Trabajo` : `Centro de Operaciones`}
-                                    </h1>
-                                    <p className="text-gray-400 text-sm mt-1 font-medium">
-                                        {role === Role.BARBER
-                                            ? `Barbero: ${loggedInUser.name}`
-                                            : adminViewMode === 'WORKSTATION'
-                                                ? 'Modo Operativo Activo (Vista de Barbero)'
-                                                : 'Gestión de rendimiento y agenda global'
-                                        }
-                                    </p>
-                                </div>
-
-                                {/* Management Toolbar - Only for ADMIN */}
-                                {role === Role.ADMIN && adminViewMode === 'DASHBOARD' && (
-                                    <div className="flex flex-wrap gap-3">
-                                        <button
-                                            onClick={() => setIsCancellationReportOpen(true)}
-                                            className="flex items-center gap-2 glass-morphism-inner text-red-400 px-4 py-2 rounded-lg font-bold hover:bg-red-900/20 hover:text-red-300 border border-red-900/30 backdrop-blur transition-all"
-                                        >
-                                            <AlertCircle size={18} />
-                                            Reporte Cancelaciones
-                                        </button>
-                                        {/* Settings moved to nav bar for barbers, but kept here for explicit Admin Access */}
-                                        <button
-                                            onClick={() => setIsShopRulesOpen(true)}
-                                            className="flex items-center gap-2 glass-morphism-inner text-gray-300 px-4 py-2 rounded-lg font-bold hover:bg-white/10 hover:text-white border border-white/5 backdrop-blur transition-all"
-                                        >
-                                            <Settings size={18} />
-                                            Configuración
-                                        </button>
-                                        <button
-                                            onClick={() => setIsStyleEditorOpen(true)}
-                                            className="flex items-center gap-2 glass-morphism-inner text-gray-300 px-4 py-2 rounded-lg font-bold hover:bg-white/10 hover:text-white border border-white/5 backdrop-blur transition-all"
-                                        >
-                                            <Tag size={18} />
-                                            Estilos
-                                        </button>
-                                        <button
-                                            onClick={() => setIsBarberManagerOpen(true)}
-                                            className="flex items-center gap-2 glass-morphism-inner text-gray-300 px-4 py-2 rounded-lg font-bold hover:bg-white/10 hover:text-white border border-white/5 backdrop-blur transition-all"
-                                        >
-                                            <Briefcase size={18} />
-                                            Staff
-                                        </button>
-                                        <button
-                                            onClick={() => setIsClientManagerOpen(true)}
-                                            className="flex items-center gap-2 glass-morphism-inner text-gray-300 px-4 py-2 rounded-lg font-bold hover:bg-white/10 hover:text-white border border-white/5 backdrop-blur transition-all"
-                                        >
-                                            <Users size={18} />
-                                            Clientes
-                                        </button>
-                                        <button
-                                            onClick={() => setIsServiceManagerOpen(true)}
-                                            className="flex items-center gap-2 glass-morphism-inner text-gray-300 px-4 py-2 rounded-lg font-bold hover:bg-white/10 hover:text-white border border-white/5 backdrop-blur transition-all"
-                                        >
-                                            <Scissors size={18} />
-                                            Servicios
-                                        </button>
-                                        <button
-                                            onClick={() => setIsBookingModalOpen(true)}
-                                            className="flex items-center gap-2 bg-brand-500 text-black px-4 py-2 rounded-lg font-bold hover:bg-brand-400 shadow-[0_4px_20px_-5px_rgba(240,180,41,0.4)] transition-all transform hover:scale-105"
-                                        >
-                                            <Plus size={18} strokeWidth={3} />
-                                            Nueva Cita
-                                        </button>
-                                    </div>
+                                {/* CONDITIONAL DASHBOARD: BARBER vs ADMIN (Dashboard vs Workstation) */}
+                                {(role === Role.BARBER || (role === Role.ADMIN && adminViewMode === 'WORKSTATION')) ? (
+                                    <BarberDashboard
+                                        barberId={role === Role.BARBER ? loggedInUser.id : 'b1'}
+                                        currentBarber={currentBarber || undefined}
+                                        barbers={barbers}
+                                        appointments={visibleAppointments}
+                                        services={services}
+                                        onStatusChange={handleStatusChange}
+                                        onUpdateBarber={handleUpdateBarber}
+                                        openHour={openHour}
+                                        closeHour={closeHour}
+                                    />
+                                ) : (
+                                    <MetricsPanel
+                                        metrics={metrics}
+                                        appointments={visibleAppointments}
+                                        currentDate={currentDate}
+                                        services={services}
+                                        openHour={openHour}
+                                        closeHour={closeHour}
+                                    />
                                 )}
-                            </div>
 
-                            {/* CONDITIONAL DASHBOARD: BARBER vs ADMIN (Dashboard vs Workstation) */}
-                            {(role === Role.BARBER || (role === Role.ADMIN && adminViewMode === 'WORKSTATION')) ? (
-                                <BarberDashboard
-                                    barberId={role === Role.BARBER ? loggedInUser.id : 'b1'}
-                                    currentBarber={currentBarber || undefined}
-                                    barbers={barbers}
-                                    appointments={visibleAppointments}
-                                    services={services}
-                                    onStatusChange={handleStatusChange}
-                                    onUpdateBarber={handleUpdateBarber}
-                                    openHour={openHour}
-                                    closeHour={closeHour}
-                                />
-                            ) : (
-                                <MetricsPanel
-                                    metrics={metrics}
-                                    appointments={visibleAppointments}
-                                    currentDate={currentDate}
-                                    services={services}
-                                    openHour={openHour}
-                                    closeHour={closeHour}
-                                />
-                            )}
-
-                            <div className="glass-morphism rounded-xl shadow-2xl flex flex-col relative overflow-visible mt-6">
-                                <Timeline
-                                    barbers={visibleBarbers}
-                                    appointments={visibleAppointments}
-                                    services={services}
-                                    currentDate={currentDate}
-                                    openHour={openHour}
-                                    closeHour={closeHour}
-                                    timeSliceMinutes={timeSliceMinutes} // Passed down for dynamic grid
-                                    onStatusChange={handleStatusChange}
-                                    onDateChange={setCurrentDate}
-                                    onEditAppointment={setEditingAppointment}
-                                />
-                            </div>
-                        </>
-                    ) : (
-                        // CLIENT VIEW
-                        <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 animate-in zoom-in-95 duration-500">
-                            {/* PROFESSIONAL CLIENT HUB */}
-                            <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-                                {/* LEFT: QUICK BOOKING BOX (Col 1-5) */}
-                                <div className="lg:col-span-5 space-y-6 order-2 lg:order-1">
-                                    <div className="glass-morphism-inner p-8 rounded-[2.5rem] border border-white/10 space-y-8 relative overflow-hidden group">
-                                        <div className="absolute inset-0 bg-brand-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-                                        <div className="relative">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em]">Citas Disponibles</span>
-                                            </div>
-                                            <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic leading-[0.9] mb-4">Reserva tu<br />Experiencia</h2>
-                                            <p className="text-gray-400 text-xs font-medium leading-relaxed mb-6">Elige el servicio que mejor se adapte a tu estilo y asegura tu lugar con los expertos.</p>
-                                        </div>
-
-                                        <div className="glass-morphism rounded-2xl border border-white/5 overflow-hidden">
-                                            <BookingWizard
-                                                barbers={barbers}
-                                                services={services}
-                                                clients={clients}
-                                                existingAppointments={appointments}
-                                                shopRules={shopRules}
-                                                openHour={openHour}
-                                                closeHour={closeHour}
-                                                timeSliceMinutes={timeSliceMinutes}
-                                                currentUser={loggedInUser}
-                                                currentRole={role}
-                                                onBook={handleBook}
-                                                onCancel={() => { }}
-                                                onCreateClient={handleCreateClient}
-                                                onUpdateClient={handleUpdateClient}
-                                                onDeleteClient={handleDeleteClient}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Stats for Trust */}
-                                    <div className="grid grid-cols-3 gap-4 px-4">
-                                        <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/5">
-                                            <p className="text-xl font-black text-white">{barbers.length}</p>
-                                            <p className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Expertos</p>
-                                        </div>
-                                        <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/5">
-                                            <p className="text-xl font-black text-white">{services.length}</p>
-                                            <p className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Estilos</p>
-                                        </div>
-                                        <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/5">
-                                            <p className="text-xl font-black text-white">100%</p>
-                                            <p className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Calidad</p>
-                                        </div>
-                                    </div>
+                                <div className="glass-morphism rounded-xl shadow-2xl flex flex-col relative overflow-visible mt-6">
+                                    <Timeline
+                                        barbers={visibleBarbers}
+                                        appointments={visibleAppointments}
+                                        services={services}
+                                        currentDate={currentDate}
+                                        openHour={openHour}
+                                        closeHour={closeHour}
+                                        timeSliceMinutes={timeSliceMinutes} // Passed down for dynamic grid
+                                        onStatusChange={handleStatusChange}
+                                        onDateChange={setCurrentDate}
+                                        onEditAppointment={setEditingAppointment}
+                                    />
                                 </div>
+                            </>
+                        ) : (
+                            // CLIENT VIEW
+                            <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 animate-in zoom-in-95 duration-500">
+                                {/* PROFESSIONAL CLIENT HUB */}
+                                <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-                                {/* RIGHT: ARCADE & PROFILE (Col 6-12) */}
-                                <div className="lg:col-span-7 space-y-6 order-1 lg:order-2">
-                                    {/* WELCOME BANNER */}
-                                    <div className="glass-morphism-inner p-6 rounded-2xl flex items-center justify-between backdrop-blur-md border border-brand-500/20">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
-                                                <User className="text-brand-500" size={24} />
+                                    {/* LEFT: QUICK BOOKING BOX (Col 1-5) */}
+                                    <div className="lg:col-span-5 space-y-6 order-2 lg:order-1">
+                                        <div className="glass-morphism-inner p-8 rounded-[2.5rem] border border-white/10 space-y-8 relative overflow-hidden group">
+                                            <div className="absolute inset-0 bg-brand-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                                            <div className="relative">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em]">Citas Disponibles</span>
+                                                </div>
+                                                <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic leading-[0.9] mb-4">Reserva tu<br />Experiencia</h2>
+                                                <p className="text-gray-400 text-xs font-medium leading-relaxed mb-6">Elige el servicio que mejor se adapte a tu estilo y asegura tu lugar con los expertos.</p>
                                             </div>
-                                            <div>
-                                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Bienvenido de nuevo</p>
-                                                <h3 className="text-xl font-black text-white italic">{loggedInUser.name}</h3>
+
+                                            <div className="glass-morphism rounded-2xl border border-white/5 overflow-hidden">
+                                                <BookingWizard
+                                                    barbers={barbers}
+                                                    services={services}
+                                                    clients={clients}
+                                                    existingAppointments={appointments}
+                                                    shopRules={shopRules}
+                                                    openHour={openHour}
+                                                    closeHour={closeHour}
+                                                    timeSliceMinutes={timeSliceMinutes}
+                                                    currentUser={loggedInUser}
+                                                    currentRole={role}
+                                                    onBook={handleBook}
+                                                    onCancel={() => { }}
+                                                    onCreateClient={handleCreateClient}
+                                                    onUpdateClient={handleUpdateClient}
+                                                    onDeleteClient={handleDeleteClient}
+                                                />
                                             </div>
                                         </div>
-                                        <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-emerald-500/10 rounded-full border border-emerald-500/20">
-                                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                                            <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">Sesión Segura</span>
+
+                                        {/* Stats for Trust */}
+                                        <div className="grid grid-cols-3 gap-4 px-4">
+                                            <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/5">
+                                                <p className="text-xl font-black text-white">{barbers.length}</p>
+                                                <p className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Expertos</p>
+                                            </div>
+                                            <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/5">
+                                                <p className="text-xl font-black text-white">{services.length}</p>
+                                                <p className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Estilos</p>
+                                            </div>
+                                            <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/5">
+                                                <p className="text-xl font-black text-white">100%</p>
+                                                <p className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Calidad</p>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* ARCADE THEATER TEASER */}
-                                    <div className="glass-morphism rounded-[2.5rem] border border-white/10 overflow-hidden group/game relative">
-                                        {/* Dynamic Gradient Background */}
-                                        <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-emerald-500/5 to-transparent opacity-0 group-hover/game:opacity-100 transition-opacity duration-1000" />
+                                    {/* RIGHT: ARCADE & PROFILE (Col 6-12) */}
+                                    <div className="lg:col-span-7 space-y-6 order-1 lg:order-2">
+                                        {/* WELCOME BANNER */}
+                                        <div className="glass-morphism-inner p-6 rounded-2xl flex items-center justify-between backdrop-blur-md border border-brand-500/20">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
+                                                    <User className="text-brand-500" size={24} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Bienvenido de nuevo</p>
+                                                    <h3 className="text-xl font-black text-white italic">{loggedInUser.name}</h3>
+                                                </div>
+                                            </div>
+                                            <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+                                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                                                <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">Sesión Segura</span>
+                                            </div>
+                                        </div>
 
-                                        <div className="relative p-8">
-                                            <div className="flex items-center justify-between mb-8">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover/game:border-brand-500/40 transition-all duration-500 group-hover/game:shadow-[0_0_30px_rgba(202,168,111,0.2)]">
-                                                        <Gamepad2 className="text-brand-500 group-hover/game:scale-110 transition-transform" size={28} />
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <div className="w-1 h-1 bg-brand-500 rounded-full animate-ping" />
-                                                            <p className="text-gray-500 text-[9px] font-black uppercase tracking-[0.4em]">Entertainment Hub</p>
+                                        {/* ARCADE THEATER TEASER */}
+                                        <div className="glass-morphism rounded-[2.5rem] border border-white/10 overflow-hidden group/game relative">
+                                            {/* Dynamic Gradient Background */}
+                                            <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-emerald-500/5 to-transparent opacity-0 group-hover/game:opacity-100 transition-opacity duration-1000" />
+
+                                            <div className="relative p-8">
+                                                <div className="flex items-center justify-between mb-8">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover/game:border-brand-500/40 transition-all duration-500 group-hover/game:shadow-[0_0_30px_rgba(202,168,111,0.2)]">
+                                                            <Gamepad2 className="text-brand-500 group-hover/game:scale-110 transition-transform" size={28} />
                                                         </div>
-                                                        <h3 className="text-2xl font-black text-white tracking-tight italic uppercase">Chronos Arcade</h3>
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <div className="w-1 h-1 bg-brand-500 rounded-full animate-ping" />
+                                                                <p className="text-gray-500 text-[9px] font-black uppercase tracking-[0.4em]">Entertainment Hub</p>
+                                                            </div>
+                                                            <h3 className="text-2xl font-black text-white tracking-tight italic uppercase">Chronos Arcade</h3>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 px-4 py-2 bg-brand-500/10 rounded-full border border-brand-500/20">
+                                                        <div className="w-1.5 h-1.5 bg-brand-500 rounded-full animate-pulse" />
+                                                        <span className="text-[9px] text-brand-500 font-black uppercase tracking-widest">Interactive Teaser</span>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2 px-4 py-2 bg-brand-500/10 rounded-full border border-brand-500/20">
-                                                    <div className="w-1.5 h-1.5 bg-brand-500 rounded-full animate-pulse" />
-                                                    <span className="text-[9px] text-brand-500 font-black uppercase tracking-widest">Interactive Teaser</span>
-                                                </div>
-                                            </div>
 
-                                            <div className="bg-dark-950/80 rounded-3xl border border-white/5 p-6 relative group/screen overflow-hidden">
-                                                {/* Ambient Screen Glow */}
-                                                <div className="absolute inset-0 bg-brand-500/5 opacity-0 group-hover/screen:opacity-100 transition-opacity duration-700 pointer-events-none" />
-                                                <SnakeGame />
-                                                <div className="absolute inset-x-0 bottom-4 flex justify-center opacity-0 group-hover/game:opacity-100 transition-opacity">
-                                                    <div className="px-4 py-2 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-[9px] text-gray-400 font-bold uppercase tracking-[0.2em]">
-                                                        Usa las flechas para jugar • Clic para Pantalla Completa
+                                                <div className="bg-dark-950/80 rounded-3xl border border-white/5 p-6 relative group/screen overflow-hidden">
+                                                    {/* Ambient Screen Glow */}
+                                                    <div className="absolute inset-0 bg-brand-500/5 opacity-0 group-hover/screen:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                                                    <SnakeGame />
+                                                    <div className="absolute inset-x-0 bottom-4 flex justify-center opacity-0 group-hover/game:opacity-100 transition-opacity">
+                                                        <div className="px-4 py-2 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-[9px] text-gray-400 font-bold uppercase tracking-[0.2em]">
+                                                            Usa las flechas para jugar • Clic para Pantalla Completa
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -768,133 +813,134 @@ export default function App() {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </main>
-            </div>
-
-            {/* Admin Booking Modal (Only for Admin to create appointments for others) */}
-            {isBookingModalOpen && role === Role.ADMIN && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="w-full max-w-lg transform transition-all scale-100 glass-morphism rounded-xl">
-                        <BookingWizard
-                            barbers={barbers}
-                            services={services}
-                            clients={clients}
-                            existingAppointments={appointments}
-                            shopRules={shopRules}
-                            openHour={openHour}
-                            closeHour={closeHour}
-                            timeSliceMinutes={timeSliceMinutes} // Passed down
-                            currentUser={loggedInUser}
-                            currentRole={Role.ADMIN}
-                            onBook={handleBook}
-                            onCancel={() => setIsBookingModalOpen(false)}
-                            onCreateClient={handleCreateClient}
-                            onUpdateClient={handleUpdateClient}
-                            onDeleteClient={handleDeleteClient}
-                        />
-                    </div>
+                        )}
+                    </main>
                 </div>
-            )}
 
-            {/* Modals - Only render if user has permission (ADMIN or BARBER for specific ones) */}
+                {/* Admin Booking Modal (Only for Admin to create appointments for others) */}
+                {isBookingModalOpen && role === Role.ADMIN && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                        <div className="w-full max-w-lg transform transition-all scale-100 glass-morphism rounded-xl">
+                            <BookingWizard
+                                barbers={barbers}
+                                services={services}
+                                clients={clients}
+                                existingAppointments={appointments}
+                                shopRules={shopRules}
+                                openHour={openHour}
+                                closeHour={closeHour}
+                                timeSliceMinutes={timeSliceMinutes} // Passed down
+                                currentUser={loggedInUser}
+                                currentRole={Role.ADMIN}
+                                onBook={handleBook}
+                                onCancel={() => setIsBookingModalOpen(false)}
+                                onCreateClient={handleCreateClient}
+                                onUpdateClient={handleUpdateClient}
+                                onDeleteClient={handleDeleteClient}
+                            />
+                        </div>
+                    </div>
+                )}
 
-            {/* Services Manager - Admin Only */}
-            {role === Role.ADMIN && isServiceManagerOpen && (
-                <ServiceManager
-                    services={services}
-                    onAdd={handleAddService}
-                    onUpdate={handleUpdateService}
-                    onDelete={handleDeleteService}
-                    onClose={() => setIsServiceManagerOpen(false)}
-                />
-            )}
+                {/* Modals - Only render if user has permission (ADMIN or BARBER for specific ones) */}
 
-            {/* Barber Manager - Admin Only */}
-            {role === Role.ADMIN && isBarberManagerOpen && (
-                <BarberManager
-                    barbers={barbers}
-                    onAdd={handleAddBarber}
-                    onUpdate={handleUpdateBarber}
-                    onDelete={handleDeleteBarber}
-                    onClose={() => setIsBarberManagerOpen(false)}
-                />
-            )}
+                {/* Services Manager - Admin Only */}
+                {role === Role.ADMIN && isServiceManagerOpen && (
+                    <ServiceManager
+                        services={services}
+                        onAdd={handleAddService}
+                        onUpdate={handleUpdateService}
+                        onDelete={handleDeleteService}
+                        onClose={() => setIsServiceManagerOpen(false)}
+                    />
+                )}
 
-            {/* Client Manager - Admin Only */}
-            {role === Role.ADMIN && isClientManagerOpen && (
-                <ClientManager
-                    clients={clients}
-                    onAdd={handleCreateClient}
-                    onUpdate={handleUpdateClient}
-                    onDelete={handleDeleteClient}
-                    onClose={() => setIsClientManagerOpen(false)}
-                />
-            )}
+                {/* Barber Manager - Admin Only */}
+                {role === Role.ADMIN && isBarberManagerOpen && (
+                    <BarberManager
+                        barbers={barbers}
+                        onAdd={handleAddBarber}
+                        onUpdate={handleUpdateBarber}
+                        onDelete={handleDeleteBarber}
+                        onClose={() => setIsBarberManagerOpen(false)}
+                    />
+                )}
 
-            {/* Shop Rules / Time Slice Settings - Available to Admin AND Barber (as requested) */}
-            {(role === Role.ADMIN || role === Role.BARBER) && isShopRulesOpen && (
-                <ShopRulesEditor
-                    currentRules={shopRules}
-                    currentOpenHour={openHour}
-                    currentCloseHour={closeHour}
-                    currentTimeSlice={timeSliceMinutes}
-                    onSave={handleUpdateSettings}
-                    onClose={() => setIsShopRulesOpen(false)}
-                />
-            )}
+                {/* Client Manager - Admin Only */}
+                {role === Role.ADMIN && isClientManagerOpen && (
+                    <ClientManager
+                        clients={clients}
+                        onAdd={handleCreateClient}
+                        onUpdate={handleUpdateClient}
+                        onDelete={handleDeleteClient}
+                        onClose={() => setIsClientManagerOpen(false)}
+                    />
+                )}
 
-            {/* Style Editor - Admin Only */}
-            {role === Role.ADMIN && isStyleEditorOpen && (
-                <StyleOptionsEditor
-                    currentOptions={styleOptions}
-                    onSave={handleUpdateStyles}
-                    onClose={() => setIsStyleEditorOpen(false)}
-                />
-            )}
+                {/* Shop Rules / Time Slice Settings - Available to Admin AND Barber (as requested) */}
+                {(role === Role.ADMIN || role === Role.BARBER) && isShopRulesOpen && (
+                    <ShopRulesEditor
+                        currentRules={shopRules}
+                        currentOpenHour={openHour}
+                        currentCloseHour={closeHour}
+                        currentTimeSlice={timeSliceMinutes}
+                        onSave={handleUpdateSettings}
+                        onClose={() => setIsShopRulesOpen(false)}
+                    />
+                )}
 
-            {/* Cancellation Report - Admin Only */}
-            {role === Role.ADMIN && isCancellationReportOpen && (
-                <CancellationAnalysis
-                    appointments={appointments}
-                    onClose={() => setIsCancellationReportOpen(false)}
-                />
-            )}
+                {/* Style Editor - Admin Only */}
+                {role === Role.ADMIN && isStyleEditorOpen && (
+                    <StyleOptionsEditor
+                        currentOptions={styleOptions}
+                        onSave={handleUpdateStyles}
+                        onClose={() => setIsStyleEditorOpen(false)}
+                    />
+                )}
 
-            {/* Appointment Editor (Available to Admin and Barber) */}
-            {editingAppointment && (
-                <AppointmentEditor
-                    appointment={editingAppointment}
-                    allAppointments={appointments}
-                    serviceName={services.find(s => s.id === editingAppointment.serviceId)?.name || 'Servicio'}
-                    onClose={() => setEditingAppointment(null)}
-                    onSave={handleUpdateAppointment}
-                />
-            )}
+                {/* Cancellation Report - Admin Only */}
+                {role === Role.ADMIN && isCancellationReportOpen && (
+                    <CancellationAnalysis
+                        appointments={appointments}
+                        onClose={() => setIsCancellationReportOpen(false)}
+                    />
+                )}
 
-            {/* User Profile / Dashboard Drawer */}
-            {isProfileOpen && loggedInUser && (
-                <UserProfile
-                    client={loggedInUser}
-                    shopRules={shopRules}
-                    globalOptions={styleOptions}
-                    userRole={role}
-                    userAppointments={appointments.filter(a => a.clientId === loggedInUser.id && a.status !== AppointmentStatus.CANCELLED)}
-                    onClose={() => setIsProfileOpen(false)}
-                    onUpdatePreferences={handleUpdatePreferences}
-                    onUpdateProfile={handleUpdateProfile} // Added profile update handler
-                    onCancelAppointment={handleCancelAppointment}
-                />
-            )}
+                {/* Appointment Editor (Available to Admin and Barber) */}
+                {editingAppointment && (
+                    <AppointmentEditor
+                        appointment={editingAppointment}
+                        allAppointments={appointments}
+                        serviceName={services.find(s => s.id === editingAppointment.serviceId)?.name || 'Servicio'}
+                        onClose={() => setEditingAppointment(null)}
+                        onSave={handleUpdateAppointment}
+                    />
+                )}
 
-            {/* WORLD-CLASS DEDICATED ARCADE PAGE */}
-            {isArcadePageOpen && (
-                <ArcadePage
-                    playerName={loggedInUser?.name || 'Invitado'}
-                    onBack={() => setIsArcadePageOpen(false)}
-                />
-            )}
-        </div>
+                {/* User Profile / Dashboard Drawer */}
+                {isProfileOpen && loggedInUser && (
+                    <UserProfile
+                        client={loggedInUser}
+                        shopRules={shopRules}
+                        globalOptions={styleOptions}
+                        userRole={role}
+                        userAppointments={appointments.filter(a => a.clientId === loggedInUser.id && a.status !== AppointmentStatus.CANCELLED)}
+                        onClose={() => setIsProfileOpen(false)}
+                        onUpdatePreferences={handleUpdatePreferences}
+                        onUpdateProfile={handleUpdateProfile} // Added profile update handler
+                        onCancelAppointment={handleCancelAppointment}
+                    />
+                )}
+
+                {/* WORLD-CLASS DEDICATED ARCADE PAGE */}
+                {isArcadePageOpen && (
+                    <ArcadePage
+                        playerName={loggedInUser?.name || 'Invitado'}
+                        onBack={() => setIsArcadePageOpen(false)}
+                    />
+                )}
+                {/* End of Main App Content Wrapper */}
+            </div >
+        </>
     );
 }

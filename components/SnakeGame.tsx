@@ -316,9 +316,10 @@ export const SnakeGame: React.FC<{ isFullScreen?: boolean; onClose?: () => void 
                     </div>
 
                     {/* Power-Up Node */}
+                    {/* Power-Up Node (CUSTOMIZED ICONS) */}
                     {powerUp && (
                         <div
-                            className="absolute flex items-center justify-center animate-pulse text-brand-400 z-20"
+                            className="absolute flex items-center justify-center animate-pulse z-20"
                             style={{
                                 left: `${(powerUp.x / GRID_WIDTH) * 100}%`,
                                 top: `${(powerUp.y / GRID_HEIGHT) * 100}%`,
@@ -328,11 +329,30 @@ export const SnakeGame: React.FC<{ isFullScreen?: boolean; onClose?: () => void 
                                 transform: 'scale(1.5)'
                             }}
                         >
-                            <div className="w-full h-full bg-brand-500/20 rounded-full border border-brand-500 flex items-center justify-center shadow-[0_0_20px_rgba(202,168,111,0.5)]">
-                                {powerUp.type === 'SPEED' && <Zap size={14} className="animate-pulse" />}
-                                {powerUp.type === 'SHRINK' && <Target size={14} />}
-                                {powerUp.type === 'GHOST' && <ShieldCheck size={14} />}
-                            </div>
+                            {/* SPEED/BONUS => BARBER POLE */}
+                            {powerUp.type === 'SPEED' && (
+                                <div className="w-full h-full rounded-full border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.6)] overflow-hidden relative bg-white transform rotate-45">
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-[2px] -rotate-45 scale-150">
+                                        <div className="w-[200%] h-1 bg-red-600"></div>
+                                        <div className="w-[200%] h-1 bg-blue-600"></div>
+                                        <div className="w-[200%] h-1 bg-red-600"></div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* SHRINK => COSTA RICA FLAG */}
+                            {powerUp.type === 'SHRINK' && (
+                                <div className="w-full h-full flex items-center justify-center text-[10px] shadow-[0_0_20px_rgba(255,255,255,0.4)]">
+                                    <span className="text-lg leading-none">🇨🇷</span>
+                                </div>
+                            )}
+
+                            {/* GHOST/OTHER => Original Shield */}
+                            {powerUp.type === 'GHOST' && (
+                                <div className="w-full h-full bg-brand-500/20 rounded-full border border-brand-500 flex items-center justify-center shadow-[0_0_20px_rgba(202,168,111,0.5)]">
+                                    <ShieldCheck size={14} className="text-brand-400" />
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
