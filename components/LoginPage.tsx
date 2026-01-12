@@ -32,12 +32,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, error }) => {
     };
 
     const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        // Allow only numbers and max 6 digits
-        const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+        // ALLOW ALL CHARACTERS (Hybrid Mode: PIN or Admin Password)
+        // We trim spaces but allow letters/symbols for Admin passwords
+        const val = e.target.value;
         setCode(val);
     };
 
-
+    const isPasswordMode = code.length > 6 || /[^0-9]/.test(code);
 
     return (
         <div className="fixed inset-0 bg-[#050505] font-sans overflow-hidden">
@@ -83,22 +84,36 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, error }) => {
                                         value={identity}
                                         onChange={handleIdentityChange}
                                         className="w-full bg-black/20 border border-dark-600 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 focus:outline-none transition-all font-mono"
-                                        placeholder="Ej. 101110222"
+                                        placeholder="Ej. 101110222 o admin@..."
                                         required
                                     />
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wide ml-1">Código de Acceso (6 Dígitos)</label>
+                                <div className="flex justify-between items-center">
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wide ml-1">
+                                        {isPasswordMode ? 'Contraseña de Administrador' : 'Código de Acceso'}
+                                    </label>
+                                    {isPasswordMode && (
+                                        <span className="text-[9px] text-brand-500 font-mono uppercase bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/20">Admin Mode</span>
+                                    )}
+                                </div>
                                 <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        {isPasswordMode ? (
+                                            <Shield size={16} className="text-brand-500 animate-pulse" />
+                                        ) : (
+                                            <Zap size={16} className="text-gray-500 group-focus-within:text-yellow-500 transition-colors" />
+                                        )}
+                                    </div>
                                     <input
                                         type={showCode ? "text" : "password"}
                                         value={code}
                                         onChange={handleCodeChange}
-                                        className="w-full bg-black/20 border border-dark-600 rounded-xl py-3 pl-4 pr-10 text-white placeholder-gray-600 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 focus:outline-none transition-all font-mono tracking-widest text-center text-lg"
-                                        placeholder="• • • • • •"
-                                        maxLength={6}
+                                        className={`w-full bg-black/20 border rounded-xl py-3 pl-10 pr-10 text-white placeholder-gray-600 focus:outline-none transition-all font-mono tracking-widest ${isPasswordMode ? 'border-brand-500/50 focus:border-brand-500' : 'border-dark-600 focus:border-brand-500 text-center text-lg'}`}
+                                        placeholder={isPasswordMode ? "Contraseña..." : "• • • • • •"}
+                                        // Removed maxLength to allow complex passwords
                                         required
                                     />
                                     <button
@@ -113,7 +128,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, error }) => {
 
                             <button
                                 type="submit"
-                                disabled={isLoading || identity.length < 3 || code.length !== 6}
+                                disabled={isLoading || identity.length < 3 || code.length < 6}
                                 className="w-full bg-brand-500 text-black font-bold py-3.5 rounded-xl hover:bg-brand-400 shadow-[0_0_20px_rgba(240,180,41,0.3)] hover:shadow-[0_0_30px_rgba(240,180,41,0.5)] transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
                             >
                                 {isLoading ? (
