@@ -18,13 +18,15 @@ RETURNS UUID AS $$
   AND is_blocked = FALSE;
 $$ LANGUAGE sql SECURITY DEFINER;
 
--- 3. (Optional but recommended) Specific policies for profiles for tighter security
--- Redefining existing or adding more restrictive checks
+-- 3. Política específica para profiles
+-- Permite que el usuario vea su propio perfil SIEMPRE (para que el frontend chequee is_blocked)
+-- Y permite ver otros del mismo org si no está bloqueado.
 DROP POLICY IF EXISTS "Profiles viewable by org members" ON profiles;
 CREATE POLICY "Profiles viewable by org members" ON profiles
     FOR ALL USING (
-        organization_id = get_current_org_id() 
-        AND (SELECT is_blocked FROM profiles WHERE id = auth.uid()) = FALSE
+        (auth.uid() = id) 
+        OR 
+        (organization_id = get_current_org_id())
     );
 
 -- Note: Since all other tables (barbers, services, clients, appointments) 
