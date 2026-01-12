@@ -1,16 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Environment variables provided by Vite/Vercel
-// Professional Lookups: Check multiple prefixes just in case of environment mismatch
-const supabaseUrl =
-   import.meta.env.VITE_SUPABASE_URL ||
-   process.env.NEXT_PUBLIC_SUPABASE_URL ||
-   'https://zsshirgqlwgmlwafbncs.supabase.co'; // Hardcoded fallback for the current project
+// Professional Lookups: Check multiple prefixes and look for injected process.env from vite.config.ts
+const getRuntimeEnv = (key: string, fallback: string = ''): string => {
+   // Check import.meta.env first (Standard Vite)
+   if (import.meta.env[key]) return import.meta.env[key];
 
-const supabaseAnonKey =
-   import.meta.env.VITE_SUPABASE_ANON_KEY ||
-   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
-   '';
+   // Try to access process.env (Injected via 'define' in vite.config.ts)
+   // We use this specific syntax because it's what Vite's 'define' targets
+   try {
+      const processEnv = (process as any).env;
+      if (processEnv && processEnv[key]) return processEnv[key];
+   } catch (e) {
+      // process might not be defined in some environments, ignore
+   }
+
+   return fallback;
+};
+
+const supabaseUrl = getRuntimeEnv('VITE_SUPABASE_URL', 'https://zsshirgqlwgmlwafbncs.supabase.co');
+const supabaseAnonKey = getRuntimeEnv('VITE_SUPABASE_ANON_KEY');
 
 // Diagnostic Logging (Safe, doesn't leak full key)
 if (!supabaseUrl || !supabaseAnonKey) {
