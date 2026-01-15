@@ -53,6 +53,7 @@ export interface Client {
   sticker?: string; // Aesthetic emoji/sticker
   preferences?: CutPreferences;
   isBlocked?: boolean;
+  role?: Role; // Contextual role for the session
 }
 
 export interface Service {

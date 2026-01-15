@@ -932,8 +932,12 @@ export default function App() {
                                         {/* WELCOME BANNER */}
                                         <div className="glass-morphism-inner p-6 rounded-2xl flex items-center justify-between backdrop-blur-md border border-brand-500/20">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
-                                                    <User className="text-brand-500" size={24} />
+                                                <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 overflow-hidden">
+                                                    {loggedInUser.avatar ? (
+                                                        <img src={loggedInUser.avatar} alt={loggedInUser.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <User className="text-brand-500" size={24} />
+                                                    )}
                                                 </div>
                                                 <div>
                                                     <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Bienvenido de nuevo</p>

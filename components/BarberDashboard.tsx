@@ -203,9 +203,9 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
 
         return (
             <div className="flex flex-col items-center w-full relative z-10 py-6">
-                <div className="relative flex items-center justify-center">
-                    <div className="relative w-[280px] h-[280px] flex items-center justify-center">
-                        <svg className="w-full h-full rotate-[-90deg]">
+                <div className="relative flex items-center justify-center w-full max-w-[280px] aspect-square">
+                    <div className="relative w-full h-full flex items-center justify-center">
+                        <svg className="w-full h-full rotate-[-90deg]" viewBox="0 0 280 280">
                             <circle cx="140" cy="140" r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth="6" fill="transparent" />
                             <circle
                                 cx="140" cy="140" r={radius}
@@ -217,9 +217,9 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                                 className="transition-all duration-1000 ease-linear"
                             />
                         </svg>
-                        <div className={`absolute w-[200px] h-[200px] rounded-full blur-[80px] opacity-20 transition-colors duration-1000 ${isOvertime ? 'bg-red-600' : 'bg-brand-500'}`}></div>
+                        <div className={`absolute w-[70%] h-[70%] rounded-full blur-[60px] opacity-20 transition-colors duration-1000 ${isOvertime ? 'bg-red-600' : 'bg-brand-500'}`}></div>
                         <div className="absolute flex flex-col items-center justify-center">
-                            <div className={`font-mono text-6xl font-black tabular-nums flex items-center justify-center transition-colors duration-300 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)] ${isOvertime ? 'text-red-500' : 'text-white'}`}>
+                            <div className={`font-mono text-5xl sm:text-6xl font-black tabular-nums flex items-center justify-center transition-colors duration-300 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)] ${isOvertime ? 'text-red-500' : 'text-white'}`}>
                                 {formatMainDisplay(elapsedSeconds)}
                             </div>
                             <div className="text-[9px] uppercase font-bold tracking-[0.3em] mt-2 text-brand-500/80">Tiempo Real</div>
@@ -276,8 +276,8 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
 
                                     <div className="flex-1 flex flex-col items-center justify-center relative py-4">
                                         <div className="mb-2 relative z-10 text-center flex flex-col items-center">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-lg">{activeCut.clientName}</h2>
+                                            <div className="flex items-center gap-2 mb-1 flex-wrap justify-center">
+                                                <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-lg text-center break-words max-w-full">{activeCut.clientName}</h2>
                                                 {currentBarber?.sticker && (
                                                     <div className="bg-brand-500 text-black p-1.5 rounded-full shadow-[0_0_15px_rgba(240,180,41,0.5)] animate-bounce-slow">
                                                         <Award size={18} strokeWidth={3} />
@@ -300,7 +300,7 @@ export const BarberDashboard: React.FC<BarberDashboardProps> = ({
                                         <div className="w-full max-w-sm px-6 pb-2 relative z-20 mt-4">
                                             <button
                                                 onClick={() => onStatusChange(activeCut.id, AppointmentStatus.COMPLETED)}
-                                                className="group w-full glass-morphism-inner bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 hover:border-emerald-500/60 text-white font-bold py-4 rounded-2xl shadow-lg transition-all flex items-center justify-between px-6 relative overflow-hidden"
+                                                className="group w-full glass-morphism-inner bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 hover:border-emerald-500/60 text-white font-bold py-3 sm:py-4 rounded-2xl shadow-lg transition-all flex items-center justify-between px-4 sm:px-6 relative overflow-hidden"
                                             >
                                                 <div className="flex flex-col items-start">
                                                     <span className="text-sm font-black text-white uppercase tracking-wider group-hover:text-emerald-400 transition-colors">Finalizar Corte</span>

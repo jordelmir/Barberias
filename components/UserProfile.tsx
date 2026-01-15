@@ -340,8 +340,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
             {/* MAIN CONTAINER: Responsive Grid with strict overflow control */}
             <div className="bg-[#0a0a0a] w-full h-full md:h-[90vh] md:rounded-3xl shadow-2xl border border-white/5 flex flex-col md:flex-row max-w-7xl overflow-hidden relative">
 
-                {/* === LEFT PANEL: IDENTITY (Sidebar) === */}
-                <div className="w-full md:w-[320px] lg:w-[380px] bg-dark-900 border-b md:border-b-0 md:border-r border-white/5 flex flex-col shrink-0 relative max-h-[30vh] md:max-h-full">
+                {/* === LEFT PANEL: IDENTITY (Sidebar / Top Card) === */}
+                <div className="w-full md:w-[320px] lg:w-[380px] bg-dark-900 border-b md:border-b-0 md:border-r border-white/5 flex flex-col shrink-0 relative transition-all duration-300">
 
                     {/* Background Texture */}
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(240,180,41,0.05),transparent_40%)] pointer-events-none"></div>
@@ -499,8 +499,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                         <X size={18} />
                     </button>
 
-                    {/* Navigation Tabs */}
-                    <div className="flex items-center border-b border-white/5 bg-dark-900/30 px-6 pt-2 sticky top-0 z-40 backdrop-blur-md shrink-0">
+                    {/* Navigation Tabs - Scrollable on mobile */}
+                    <div className="flex items-center border-b border-white/5 bg-dark-900/30 px-2 md:px-6 pt-2 sticky top-0 z-40 backdrop-blur-md shrink-0 overflow-x-auto no-scrollbar mask-linear-fade">
                         {[
                             { id: 'history', label: 'Mis Citas & Historial', icon: History },
                             { id: 'preferences', label: 'Mi Estilo', icon: Award },
@@ -510,7 +510,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center gap-2 px-6 py-4 text-xs font-bold uppercase tracking-widest relative transition-colors ${activeTab === tab.id ? 'text-white' : 'text-gray-600 hover:text-gray-400'}`}
+                                className={`flex items-center gap-2 px-4 md:px-6 py-3 md:py-4 text-[10px] md:text-xs font-bold uppercase tracking-widest relative transition-colors whitespace-nowrap ${activeTab === tab.id ? 'text-white' : 'text-gray-600 hover:text-gray-400'}`}
                             >
                                 <tab.icon size={14} className={activeTab === tab.id ? 'text-brand-500' : 'opacity-50'} />
                                 {tab.label}

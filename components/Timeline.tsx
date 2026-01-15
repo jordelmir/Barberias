@@ -22,11 +22,20 @@ export const Timeline: React.FC<TimelineProps> = ({
 }) => {
     const [now, setNow] = useState(new Date());
 
+    const headerRef = React.useRef<HTMLDivElement>(null);
+    const bodyRef = React.useRef<HTMLDivElement>(null);
+
     // Simulate clock tick
     useEffect(() => {
         const interval = setInterval(() => setNow(new Date()), 60000);
         return () => clearInterval(interval);
     }, []);
+
+    const handleScroll = () => {
+        if (headerRef.current && bodyRef.current) {
+            headerRef.current.scrollLeft = bodyRef.current.scrollLeft;
+        }
+    };
 
     // Filter appointments for the current day view
     const todaysAppointments = appointments.filter(a =>
@@ -89,23 +98,23 @@ export const Timeline: React.FC<TimelineProps> = ({
                     <ChevronLeft size={18} className="text-gray-500 group-hover:text-brand-400 transition-colors" />
                 </button>
 
-                <div className="flex flex-col items-center select-none">
-                    <div className="flex items-center gap-3 mb-1.5">
+                <div className="flex flex-col items-center select-none text-center">
+                    <div className="flex items-center gap-2 md:gap-3 mb-1.5">
                         <div className={`w-1.5 h-1.5 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)] ${isToday ? 'bg-emerald-500 animate-pulse' : 'bg-gray-600'}`}></div>
-                        <span className={`text-[10px] font-mono uppercase tracking-[0.25em] ${isToday ? 'text-emerald-500/80' : 'text-gray-500'}`}>
+                        <span className={`text-[9px] md:text-[10px] font-mono uppercase tracking-[0.25em] ${isToday ? 'text-emerald-500/80' : 'text-gray-500'}`}>
                             {isToday ? 'SISTEMA EN LÍNEA' : 'MODO HISTÓRICO'}
                         </span>
                     </div>
 
-                    <div className="flex items-baseline gap-3 relative z-10">
-                        <span className="text-2xl font-black text-white tracking-tighter uppercase font-sans drop-shadow-lg capitalize">
+                    <div className="flex items-baseline gap-2 md:gap-3 relative z-10 flex-wrap justify-center">
+                        <span className="text-xl md:text-2xl font-black text-white tracking-tighter uppercase font-sans drop-shadow-lg capitalize">
                             {currentDate.toLocaleDateString('es-CR', { weekday: 'long' })}
                         </span>
-                        <span className="text-2xl font-thin text-gray-600">|</span>
-                        <span className="text-2xl font-mono font-bold text-brand-500 tracking-tighter drop-shadow-[0_0_15px_rgba(240,180,41,0.2)]">
+                        <span className="text-xl md:text-2xl font-thin text-gray-600 hidden md:inline">|</span>
+                        <span className="text-xl md:text-2xl font-mono font-bold text-brand-500 tracking-tighter drop-shadow-[0_0_15px_rgba(240,180,41,0.2)]">
                             {currentDate.toLocaleDateString('es-CR', { day: '2-digit' })}
                         </span>
-                        <span className="text-lg font-bold uppercase tracking-wide text-gray-400 self-end pb-0.5">
+                        <span className="text-sm md:text-lg font-bold uppercase tracking-wide text-gray-400 self-end pb-0.5">
                             {currentDate.toLocaleDateString('es-CR', { month: 'short' })}. {currentDate.getFullYear()}
                         </span>
                     </div>
@@ -122,12 +131,12 @@ export const Timeline: React.FC<TimelineProps> = ({
             {/* NEW: Sticky Header Bar (Barbers) - Outside the main scroll to prevent overlap */}
             <div className="sticky top-0 z-40 bg-dark-900 border-b border-white/10 shadow-xl backdrop-blur-md">
                 <div className="flex">
-                    <div className="w-16 flex-shrink-0 border-r border-white/5 p-2 flex items-center justify-center bg-dark-950 sticky left-0 z-50">
-                        <div className="text-[9px] text-gray-500 font-mono text-center leading-tight uppercase tracking-tighter">HORA<br />LOCAL</div>
+                    <div className="w-12 md:w-16 flex-shrink-0 border-r border-white/5 p-2 flex items-center justify-center bg-dark-950 sticky left-0 z-50">
+                        <div className="text-[8px] md:text-[9px] text-gray-500 font-mono text-center leading-tight uppercase tracking-tighter">HORA<br />LOCAL</div>
                     </div>
-                    <div className="flex overflow-hidden" id="timeline-header-scroll">
+                    <div className="flex overflow-hidden relative" ref={headerRef}>
                         {barbers.map(barber => (
-                            <div key={barber.id} className="w-[200px] flex-shrink-0 p-3 border-r border-white/5 flex items-center gap-3 bg-dark-900/50">
+                            <div key={barber.id} className="w-[180px] md:w-[200px] flex-shrink-0 p-2 md:p-3 border-r border-white/5 flex items-center gap-2 md:gap-3 bg-dark-900/50">
                                 <div className="relative group cursor-pointer">
                                     <img src={barber.avatar} alt={barber.name} className="w-9 h-9 rounded-full border-2 border-dark-600 transition-all group-hover:border-brand-500" />
                                     <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-dark-800 flex items-center justify-center text-[7px] font-black ${barber.speedFactor <= 1 ? 'bg-emerald-500 text-black' : 'bg-yellow-500 text-black'}`}>
@@ -148,11 +157,9 @@ export const Timeline: React.FC<TimelineProps> = ({
 
             {/* Main Scroll Container for Grid */}
             <div
-                className="overflow-auto custom-scrollbar relative flex-1"
-                onScroll={(e) => {
-                    const header = document.getElementById('timeline-header-scroll');
-                    if (header) header.scrollLeft = (e.currentTarget as HTMLDivElement).scrollLeft;
-                }}
+                className="overflow-auto custom-scrollbar relative flex-1 touch-pan-x touch-pan-y"
+                ref={bodyRef}
+                onScroll={handleScroll}
             >
                 <div className="min-w-max relative">
 
@@ -161,7 +168,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                         <div className="flex relative" style={{ height: `${timelineHeight}px` }}>
 
                             {/* Time Axis - Sticky Left */}
-                            <div className="w-16 flex-shrink-0 border-r border-white/5 bg-dark-950/40 z-20 backdrop-blur-xs sticky left-0">
+                            <div className="w-12 md:w-16 flex-shrink-0 border-r border-white/5 bg-dark-950/40 z-20 backdrop-blur-xs sticky left-0">
                                 {hours.map(hour => (
                                     <div
                                         key={hour}
@@ -191,7 +198,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                 const barberAppointments = todaysAppointments.filter(a => a.barberId === barber.id && a.status !== AppointmentStatus.CANCELLED);
 
                                 return (
-                                    <div key={barber.id} className="w-[200px] flex-shrink-0 relative border-r border-white/5 group/col">
+                                    <div key={barber.id} className="w-[180px] md:w-[200px] flex-shrink-0 relative border-r border-white/5 group/col">
 
                                         {/* Grid Lines - DYNAMIC based on timeSliceMinutes */}
                                         {Array.from({ length: totalGridLines }).map((_, i) => (
