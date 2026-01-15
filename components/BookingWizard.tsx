@@ -175,7 +175,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
     const progressPercentage = Math.min(100, (step / totalSteps) * 100);
 
     return (
-        <div className="bg-dark-900/50 rounded-xl shadow-2xl border border-white/5 max-w-md mx-auto overflow-hidden h-[680px] flex flex-col relative font-sans backdrop-blur-md">
+        <div className="bg-dark-900/50 rounded-xl shadow-2xl border border-white/5 w-full max-w-md mx-auto overflow-hidden h-[600px] md:h-[680px] flex flex-col relative font-sans backdrop-blur-md mobile-modal transition-all duration-300">
 
             {/* Visual Progress Bar (Hidden on Success Step) */}
             {step !== 6 && (
@@ -186,7 +186,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
 
             {/* Header (Hidden on Success Step) */}
             {step !== 6 && (
-                <div className="p-6 border-b border-white/10 bg-dark-900/80 backdrop-blur z-10">
+                <div className="p-4 md:p-6 border-b border-white/10 bg-dark-900/80 backdrop-blur z-10 sticky top-0">
                     <div className="flex justify-between items-center">
                         <div>
                             <h2 className="text-xl font-bold text-white flex items-center gap-2 tracking-tight">
@@ -222,7 +222,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
                 </div>
             )}
 
-            <div className="p-6 flex-1 overflow-y-auto custom-scrollbar relative">
+            <div className="p-4 md:p-6 flex-1 overflow-y-auto custom-scrollbar relative mobile-modal-content">
 
                 {/* Step 1: Client Identification (ADMIN ONLY) */}
                 {!isClientView && step === 1 && (
@@ -553,7 +553,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
                                     <p className="text-xs mt-1">Intenta con otra fecha o barbero.</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-4 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
                                     {slotsGrid.map((slot, idx) => {
                                         const isDisabled = slot.status !== 'AVAILABLE';
                                         const isSelected = selectedTime?.getTime() === slot.time.getTime();
@@ -713,7 +713,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
 
             {/* Footer Actions (Hidden on Success Step) */}
             {step !== 6 && (
-                <div className="p-6 border-t border-white/10 bg-dark-900/50 flex justify-end items-center z-10 backdrop-blur gap-4">
+                <div className="p-4 md:p-6 border-t border-white/10 bg-dark-900/50 flex justify-end items-center z-10 backdrop-blur gap-4 sticky bottom-0 mobile-p-safe">
 
                     {/* Back Button (Only show if NOT on the first step for the respective role) */}
                     {step !== (isClientView ? 2 : 1) && (

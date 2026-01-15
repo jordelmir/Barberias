@@ -69,7 +69,7 @@ const StyleSelector: React.FC<StyleSelectorProps> = ({ title, icon: Icon, value,
                     <div key={opt} className="relative group/opt">
                         <button
                             onClick={() => onSelect(opt)}
-                            className={`px-3 py-1.5 rounded-md text-[11px] font-bold border transition-all ${value === opt
+                            className={`px-3 py-2 md:py-1.5 rounded-md text-xs md:text-[11px] font-bold border transition-all touch-target ${value === opt
                                 ? 'bg-brand-500 text-black border-brand-500 shadow-sm scale-105'
                                 : 'bg-dark-900 text-gray-400 border-dark-700 hover:border-gray-500 hover:text-white'
                                 }`}
@@ -522,7 +522,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ client, shopRules, glo
                     </div>
 
                     {/* Scrollable Content - flex-1 and min-h-0 is CRITICAL for scrolling to work inside flex */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 min-h-0">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 min-h-0 mobile-p-safe pb-24 md:pb-8">
 
                         {activeTab === 'history' && (
                             <div className="max-w-3xl mx-auto space-y-6 animate-in slide-in-from-right-4 duration-300 pb-20">
